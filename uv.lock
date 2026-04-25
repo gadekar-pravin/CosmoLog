@@ -192,6 +192,7 @@ dependencies = [
     { name = "fastmcp" },
     { name = "httpx" },
     { name = "prefab-ui" },
+    { name = "pydantic" },
     { name = "python-dotenv" },
 ]
 
@@ -208,6 +209,7 @@ requires-dist = [
     { name = "fastmcp", specifier = ">=3.0.0" },
     { name = "httpx" },
     { name = "prefab-ui" },
+    { name = "pydantic", specifier = ">=2.13.3" },
     { name = "python-dotenv" },
 ]
 

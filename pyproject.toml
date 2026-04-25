@@ -8,6 +8,7 @@ dependencies = [
     "prefab-ui",
     "httpx",
     "python-dotenv",
+    "pydantic>=2.13.3",
 ]
 
 [dependency-groups]
