@@ -301,8 +301,14 @@ async def agent_loop(
                 )
 
             if not function_calls:
-                if text_parts:
-                    yield {"type": "text", "data": {"text": "\n".join(text_parts)}}
+                text = "\n".join(text_parts) if text_parts else ""
+                if not text and iteration > 1:
+                    text = (
+                        "Done — I've completed the requested actions."
+                        " Check the dashboard for updated results."
+                    )
+                if text:
+                    yield {"type": "text", "data": {"text": text}}
                 return
 
             if text_parts:
