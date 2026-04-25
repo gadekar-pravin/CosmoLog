@@ -4,7 +4,7 @@ This document breaks the CosmoLog AI Agent web application into 4 independently 
 
 **Spec reference:** `docs/agent-functional-specification.md`
 
-**Baseline:** The CosmoLog MCP server is complete (5 phases, 5 test files, ~49 tests). All existing files remain unchanged.
+**Baseline:** The CosmoLog MCP server is complete (5 phases, 5 test files, 44 tests). All existing files remain unchanged.
 
 ---
 
@@ -18,7 +18,7 @@ Install new dependencies, create the system prompt module, update environment co
 
 - 4 new dependencies in `pyproject.toml` (`google-genai`, `fastapi`, `uvicorn`, `sse-starlette`)
 - `agent_prompt.py` — system prompt string constant for the Gemini agent
-- Updated `.env.example` with `GEMINI_API_KEY` and `GEMINI_MODEL`
+- Updated `.env.example` with `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, and `GEMINI_MODEL`
 - `tests/test_agent_prompt.py` — ~4 tests verifying prompt content
 - Updated `CLAUDE.md` with agent architecture notes
 
@@ -34,8 +34,8 @@ Install new dependencies, create the system prompt module, update environment co
 - [ ] `agent_prompt.py` defines a `SYSTEM_PROMPT` string constant
 - [ ] `SYSTEM_PROMPT` mentions all three tool names: `fetch_space_data`, `manage_space_journal`, `show_space_dashboard`
 - [ ] `SYSTEM_PROMPT` instructs the recommended tool-calling order: fetch data, then journal, then dashboard
-- [ ] `SYSTEM_PROMPT` instructs the agent to show reasoning before tool calls
-- [ ] `.env.example` includes `GEMINI_API_KEY` and `GEMINI_MODEL` entries
+- [ ] `SYSTEM_PROMPT` instructs the agent to briefly explain its next action before making tool calls
+- [ ] `.env.example` includes `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, and `GEMINI_MODEL` entries
 - [ ] `tests/test_agent_prompt.py` has ~4 tests, all passing
 - [ ] `CLAUDE.md` updated with agent architecture section
 - [ ] `uv run pytest tests/test_agent_prompt.py -v` passes
@@ -70,7 +70,7 @@ The system prompt must instruct Gemini to:
 1. Act as a NASA space exploration assistant named CosmoLog.
 2. Use the three available tools to fulfill user requests about space data, journal management, and dashboard rendering.
 3. Follow the recommended tool-calling order: fetch data first, then save/manage journal entries, then render the dashboard.
-4. Show its reasoning process (thinking steps) before making tool calls.
+4. Briefly explain its next action before making tool calls (e.g., "I'll fetch today's APOD" before calling `fetch_space_data`).
 5. Provide informative, educational responses about NASA data.
 6. Always call `show_space_dashboard` at the end of a workflow that involves data fetching or journal changes, passing the most recent data.
 7. Handle errors gracefully and explain them to the user.
@@ -88,15 +88,17 @@ The system prompt must instruct Gemini to:
 Add the Gemini configuration variables below the existing `NASA_API_KEY` entry:
 
 ```
-# Google Gemini API key — required for the AI agent
-# Get a key at https://aistudio.google.com/apikey
-GEMINI_API_KEY=your-gemini-api-key-here
+# Google Cloud project — required for Vertex AI Gemini access
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
 
-# Gemini model name (optional, defaults to gemini-2.5-flash)
-GEMINI_MODEL=gemini-2.5-flash
+# GCP region (optional, defaults to us-central1)
+# GOOGLE_CLOUD_LOCATION=us-central1
+
+# Gemini model name (optional, defaults to gemini-3-flash-preview)
+GEMINI_MODEL=gemini-3-flash-preview
 ```
 
-**Reference:** Functional spec section 10.1.
+**Reference:** Functional spec section 10.1. Authenticate via `gcloud auth application-default login` before running the agent.
 
 ---
 
@@ -128,10 +130,10 @@ def test_system_prompt_mentions_tool_order():
     assert fetch_pos < journal_pos < dashboard_pos
 
 
-def test_system_prompt_mentions_reasoning():
-    """SYSTEM_PROMPT should instruct the agent to show reasoning."""
+def test_system_prompt_mentions_explaining_actions():
+    """SYSTEM_PROMPT should instruct the agent to explain its next action."""
     prompt_lower = SYSTEM_PROMPT.lower()
-    assert "reason" in prompt_lower or "think" in prompt_lower
+    assert "explain" in prompt_lower or "plan" in prompt_lower or "before" in prompt_lower
 ```
 
 ### Test Summary
@@ -141,7 +143,7 @@ def test_system_prompt_mentions_reasoning():
 | 1 | `test_system_prompt_is_string` | `SYSTEM_PROMPT` is a non-empty string of reasonable length |
 | 2 | `test_system_prompt_mentions_all_tools` | All three tool names appear in the prompt |
 | 3 | `test_system_prompt_mentions_tool_order` | Tool names appear in the recommended order |
-| 4 | `test_system_prompt_mentions_reasoning` | Prompt instructs reasoning/thinking behavior |
+| 4 | `test_system_prompt_mentions_explaining_actions` | Prompt instructs the agent to explain its next action before tool calls |
 
 ---
 
@@ -188,12 +190,12 @@ Build the core agent logic: the `TOOL_REGISTRY`, Gemini `FunctionDeclaration` ob
 ## What This Phase Delivers
 
 - `agent.py` (partial) — `TOOL_REGISTRY`, `FunctionDeclaration` objects, `agent_loop()` async generator, `_dispatch_tool()`, Gemini client initialization
-- `tests/test_agent.py` — ~11 tests covering the agent loop (mocking the Gemini client)
+- `tests/test_agent.py` — ~14 tests covering the agent loop (mocking the Gemini client)
 
 ## Prerequisites
 
 - Phase 1 complete (`agent_prompt.py`, dependencies installed)
-- A valid `GEMINI_API_KEY` is not required — tests mock the Gemini client
+- `GOOGLE_CLOUD_PROJECT` is not required — tests mock the Gemini client
 
 ## Acceptance Criteria
 
@@ -206,7 +208,7 @@ Build the core agent logic: the `TOOL_REGISTRY`, Gemini `FunctionDeclaration` ob
 - [ ] `agent_loop()` respects `MAX_ITERATIONS` (default 10) and yields an error event if exceeded
 - [ ] `agent_loop()` catches Gemini API errors and yields an `error` event instead of raising
 - [ ] `agent_loop()` handles unknown tool names from Gemini gracefully
-- [ ] `tests/test_agent.py` has ~11 tests, all passing
+- [ ] `tests/test_agent.py` has ~14 tests, all passing
 - [ ] `uv run pytest tests/test_agent.py -v` passes
 - [ ] `uv run ruff check agent.py tests/test_agent.py` is clean
 
@@ -246,13 +248,14 @@ Use `google.genai.types.FunctionDeclaration` with `properties` and `required` fi
 | Tool | Parameters | Required |
 |---|---|---|
 | `fetch_space_data` | `date` (str), `rover` (str), `sol` (int), `photo_count` (int), `neo_days` (int) | None |
-| `manage_space_journal` | `operation` (str), `entry_id` (str), `payload` (obj), `tag_filter` (str) | `operation` |
+| `manage_space_journal` | `operation` (str, enum: `create`/`read`/`update`/`delete`), `entry_id` (str), `payload` (obj), `tag_filter` (str) | `operation` |
 | `show_space_dashboard` | `space_data` (obj), `journal_entries` (array), `tag_filter` (str) | None |
 
 ### Design Notes
 
 - Gemini's function-calling uses these declarations to decide when and how to call tools. Accuracy here is critical — a mismatched type or missing description will cause Gemini to construct wrong arguments.
 - Use `google.genai.types.Schema` for parameter schemas. The `type` values are Gemini's type enum (STRING, INTEGER, OBJECT, ARRAY), not Python types.
+- The `operation` parameter for `manage_space_journal` must use `enum: ["create", "read", "update", "delete"]` in the schema to constrain Gemini's output and reduce malformed calls.
 - The `payload` parameter for `manage_space_journal` and `space_data` for `show_space_dashboard` are OBJECT types with no strict inner schema — Gemini constructs these from conversation context.
 
 ---
@@ -266,8 +269,13 @@ from google import genai
 
 load_dotenv()
 
-gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", ""))
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+_project = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
+_location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+if not _project:
+    raise SystemExit("Missing GOOGLE_CLOUD_PROJECT — required for Vertex AI.")
+
+gemini_client = genai.Client(vertexai=True, project=_project, location=_location)
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-3-flash-preview")
 ```
 
 **Reference:** Functional spec section 10.1.
@@ -275,7 +283,8 @@ MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 ### Design Notes
 
 - The client is module-level so it persists across requests (similar to `_nasa_client` in `mcp_server.py`).
-- `GEMINI_API_KEY` is required at runtime but not for tests (tests mock the client).
+- The client uses Vertex AI ADC (Application Default Credentials). Authenticate locally via `gcloud auth application-default login`.
+- `GOOGLE_CLOUD_PROJECT` is required at runtime but not for tests (tests mock the client).
 
 ---
 
@@ -312,9 +321,11 @@ The core agent loop. This is an async generator that yields SSE event dicts.
 **Reference:** Functional spec sections 5.1 and 6.2.
 
 ```python
+from google.genai import types
+
 async def agent_loop(
     message: str,
-    history: list[dict],
+    history: list[types.Content],
 ) -> AsyncGenerator[dict, None]:
     ...
 ```
@@ -344,6 +355,12 @@ async def agent_loop(
 ### Design Notes
 
 - **Async generator pattern:** The loop yields event dicts (plain Python dicts), not SSE-formatted strings. This decouples the business logic from the HTTP transport layer. Phase 3 wraps this generator in `EventSourceResponse`.
+- **History format:** `history` stores Gemini `types.Content` objects, not simplified app-level dicts. This is required because Gemini multi-turn function calling expects the full `Content`/`Part` structure:
+  1. User turn: `types.Content(role="user", parts=[types.Part.from_text(message)])`
+  2. Model turn (appended after each response): `types.Content(role="model", parts=response.candidates[0].content.parts)`
+  3. Function response turn: `types.Content(role="user", parts=[types.Part.from_function_response(name=..., response=...)])`
+
+  The FastAPI layer (`conversation_history: list[types.Content]`) owns and persists this list. The `/reset` endpoint clears it.
 - **History mutation:** The function appends to the `history` list in-place. The caller (the FastAPI route in Phase 3) owns the list and persists it across requests.
 - **Parallel tool calls:** Gemini may return multiple function calls in a single response. Dispatch them sequentially (per spec section 5.1) and collect all results before sending them back to Gemini together.
 
@@ -353,7 +370,50 @@ async def agent_loop(
 
 All tests mock the Gemini client. No real API calls.
 
-**Test strategy:** Use `unittest.mock.AsyncMock` (or `MagicMock` with appropriate return values) to simulate Gemini responses. The key mocking target is `gemini_client.aio.models.generate_content` (or whatever the async generation method is — verify from the `google-genai` SDK).
+**Test strategy:** Use `unittest.mock.AsyncMock` to simulate Gemini responses. The key mocking target is the async generation method (see SDK contract below).
+
+### Gemini SDK Contract (`google-genai`)
+
+Before implementing, verify these shapes against the installed `google-genai` version. This is the expected calling convention:
+
+```python
+from google import genai
+from google.genai import types
+
+# Client initialization
+client = genai.Client(vertexai=True, project="...", location="...")
+
+# Tool declaration wrapping — FunctionDeclarations go inside a Tool
+tool = types.Tool(function_declarations=[fetch_decl, journal_decl, dashboard_decl])
+
+# Async generation call
+response = await client.aio.models.generate_content(
+    model=MODEL,
+    contents=history,           # list[types.Content]
+    config=types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        tools=[tool],
+    ),
+)
+
+# Response parsing — extract text or function calls
+for part in response.candidates[0].content.parts:
+    if part.function_call:
+        name = part.function_call.name
+        args = dict(part.function_call.args)  # Struct → dict
+    elif part.text:
+        text = part.text
+
+# Function response turn construction
+function_response_part = types.Part.from_function_response(
+    name=tool_name,
+    response=result_dict,
+)
+history.append(types.Content(role="model", parts=response.candidates[0].content.parts))
+history.append(types.Content(role="user", parts=[function_response_part]))
+```
+
+**Critical:** Verify `client.aio.models.generate_content`, `types.GenerateContentConfig`, `Part.from_function_response`, and `types.Content` exist in the installed SDK version before writing production code. If any shape differs, update this plan before proceeding.
 
 ### Test Table
 
@@ -370,12 +430,18 @@ All tests mock the Gemini client. No real API calls.
 | 9 | `test_agent_loop_text_only` | Mock Gemini to return text (no function calls) — loop yields `start`, `text`, `done` events |
 | 10 | `test_agent_loop_with_tool_call` | Mock Gemini to return a function call then text — loop yields the full event sequence |
 | 11 | `test_agent_loop_gemini_error` | Mock Gemini to raise an exception — loop yields `start`, `error`, `done` events |
+| 12 | `test_agent_loop_multiple_tool_calls` | Mock Gemini to return 2+ function calls in one response — all are dispatched and results fed back |
+| 13 | `test_agent_loop_max_iterations` | Mock Gemini to always return function calls — loop stops after `MAX_ITERATIONS` and yields an explanatory text event |
+| 14 | `test_dispatch_tool_float_to_int_coercion` | Pass `sol=100.0`, `photo_count=3.0`, `neo_days=7.0` — args are coerced to `int` before calling the tool function |
 
 ### Test Notes
 
-- Tests 6-8 test `_dispatch_tool()` directly. Use `monkeypatch` or `unittest.mock.patch` to mock the underlying tool functions so no NASA API calls or file I/O occur.
-- Tests 9-11 test `agent_loop()` end-to-end with a mocked Gemini client. Collect all yielded events into a list using `async for` and verify the sequence.
+- Tests 6-8, 14 test `_dispatch_tool()` directly. Use `monkeypatch` or `unittest.mock.patch` to mock the underlying tool functions so no NASA API calls or file I/O occur.
+- Tests 9-13 test `agent_loop()` end-to-end with a mocked Gemini client. Collect all yielded events into a list using `async for` and verify the sequence.
 - For the dashboard test (7): mock `show_space_dashboard` to return a mock `PrefabApp` object with a `.html()` method that returns a test HTML string.
+- For test 12 (multiple tool calls): mock response to have 2 `FunctionCall` parts. Verify both are dispatched and both results appear in the yielded events.
+- For test 13 (MAX_ITERATIONS): mock Gemini to always return a function call. Assert the loop exits after `MAX_ITERATIONS` iterations and the final text event explains the limit.
+- For test 14 (float coercion): call `_dispatch_tool("fetch_space_data", {"sol": 100.0, "photo_count": 3.0})` and verify the underlying function receives `int` values.
 
 ---
 
@@ -383,17 +449,17 @@ All tests mock the Gemini client. No real API calls.
 
 ```bash
 cd CosmoLog
-uv run pytest tests/test_agent.py -v          # ~11 tests pass
-uv run pytest -v                               # all tests pass (~53+ total)
+uv run pytest tests/test_agent.py -v          # ~14 tests pass
+uv run pytest -v                               # all tests pass (~62+ total)
 uv run ruff check agent.py tests/test_agent.py
 uv run ruff format --check agent.py tests/test_agent.py
 ```
 
 Expected test count breakdown:
-- Existing MCP server tests: ~49
+- Existing MCP server tests: 44
 - `test_agent_prompt.py`: 4 tests (Phase 1)
-- `test_agent.py`: ~11 tests (this phase)
-- **Total: ~64 tests**
+- `test_agent.py`: ~14 tests (this phase)
+- **Total: ~62 tests**
 
 ---
 
@@ -414,7 +480,7 @@ Complete `agent.py` by adding the FastAPI application, 4 HTTP routes, `EventSour
 ## What This Phase Delivers
 
 - `agent.py` (complete) — FastAPI app with 4 routes (`GET /`, `POST /chat`, `POST /reset`, `GET /health`), conversation state, uvicorn entrypoint
-- `tests/test_agent_server.py` — ~5 tests using `httpx.AsyncClient` to test the HTTP layer
+- `tests/test_agent_server.py` — ~7 tests using `httpx.AsyncClient` to test the HTTP layer
 
 ## Prerequisites
 
@@ -430,7 +496,7 @@ Complete `agent.py` by adding the FastAPI application, 4 HTTP routes, `EventSour
 - [ ] `GET /health` returns `{"status": "healthy"}`
 - [ ] Conversation history persists across `/chat` requests within a session
 - [ ] `uv run python agent.py` starts the server on `HOST:PORT` (defaults to `0.0.0.0:8000`)
-- [ ] `tests/test_agent_server.py` has ~5 tests, all passing
+- [ ] `tests/test_agent_server.py` has ~7 tests, all passing
 - [ ] `uv run pytest tests/test_agent_server.py -v` passes
 - [ ] `uv run ruff check agent.py tests/test_agent_server.py` is clean
 
@@ -459,15 +525,17 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 ## Step 2: Implement Conversation State
 
 ```python
-conversation_history: list[dict] = []
+from google.genai import types
+
+conversation_history: list[types.Content] = []
 ```
 
 **Reference:** Functional spec section 6.3.
 
 ### Design Notes
 
-- Single-user, in-memory — a plain Python list. No session management.
-- The list is mutated in-place by `agent_loop()` (it appends user/assistant/tool messages).
+- Single-user, in-memory — a plain Python list of Gemini `types.Content` objects. No session management.
+- The list is mutated in-place by `agent_loop()` (it appends user, model, and function response turns as `Content` objects).
 - Lost on server restart. Cleared by `POST /reset`.
 - This is intentionally simple for a demo application.
 
@@ -571,6 +639,8 @@ Use `httpx.AsyncClient` with FastAPI's `TestClient` pattern (`ASGITransport`).
 | 3 | `test_chat_returns_sse_content_type` | `POST /chat` with `{"message": "hi"}` returns `text/event-stream` content type |
 | 4 | `test_chat_sse_has_done_event` | SSE stream from `/chat` includes a `done` event |
 | 5 | `test_root_serves_html` | `GET /` returns 200 with HTML content |
+| 6 | `test_reset_clears_history` | `POST /reset` actually clears `conversation_history` (verify length is 0 after call) |
+| 7 | `test_chat_generator_exception_yields_error_done` | When the agent loop generator raises, the SSE stream still yields `error` then `done` events |
 
 ### Test Notes
 
@@ -578,6 +648,8 @@ Use `httpx.AsyncClient` with FastAPI's `TestClient` pattern (`ASGITransport`).
 - Mock `agent_loop` at the module level in `agent.py` so the tests don't need a Gemini API key.
 - For tests 3-4: parse the SSE stream from the response body. The response is `text/event-stream` — split on `\n\n` and parse `event:` / `data:` lines.
 - Test 5 requires the placeholder `static/index.html` from Step 7.
+- Test 6: populate `conversation_history` with a test entry before calling `/reset`, then assert the list is empty after.
+- Test 7: mock `agent_loop` to be an async generator that raises an exception mid-stream. Assert the response still contains `error` and `done` SSE events.
 
 ---
 
@@ -585,7 +657,7 @@ Use `httpx.AsyncClient` with FastAPI's `TestClient` pattern (`ASGITransport`).
 
 ```bash
 cd CosmoLog
-uv run pytest tests/test_agent_server.py -v    # ~5 tests pass
+uv run pytest tests/test_agent_server.py -v    # ~7 tests pass
 uv run pytest -v                                # all tests pass (~69+ total)
 uv run ruff check agent.py tests/test_agent_server.py
 uv run ruff format --check agent.py tests/test_agent_server.py
@@ -603,10 +675,10 @@ uv run python agent.py
 ```
 
 Expected test count breakdown:
-- Existing MCP server tests: ~49
+- Existing MCP server tests: 44
 - `test_agent_prompt.py`: 4 tests
-- `test_agent.py`: ~11 tests
-- `test_agent_server.py`: ~5 tests (this phase)
+- `test_agent.py`: ~14 tests
+- `test_agent_server.py`: ~7 tests (this phase)
 - **Total: ~69 tests**
 
 ---
@@ -632,7 +704,7 @@ Build the complete single-page frontend (`static/index.html`) with a split-pane 
 ## Prerequisites
 
 - Phase 3 complete (`agent.py` fully runnable with all routes)
-- A valid `GEMINI_API_KEY` in `.env` for manual testing
+- A valid `GOOGLE_CLOUD_PROJECT` in `.env` and ADC configured via `gcloud auth application-default login`
 
 ## Acceptance Criteria
 
@@ -844,7 +916,7 @@ uv run ruff format --check agent.py
 ### Full Test Suite
 
 ```bash
-uv run pytest -v    # all ~69 tests still pass (no new Python tests this phase)
+uv run pytest -v    # all ~69 tests still pass (no new tests this phase)
 ```
 
 ---
@@ -863,9 +935,9 @@ feat: build agent frontend with chat UI and dashboard panel
 
 | Phase | Files Created/Modified | Tests Added | Running Total |
 |---|---|---|---|
-| 1: Agent Foundation | `agent_prompt.py`, `.env.example`, `CLAUDE.md`, `pyproject.toml` | 4 | ~53 |
-| 2: Agent Loop + Tool Dispatch | `agent.py` (partial) | ~11 | ~64 |
-| 3: FastAPI Server + SSE Streaming | `agent.py` (complete), `static/index.html` (placeholder) | ~5 | ~69 |
+| 1: Agent Foundation | `agent_prompt.py`, `.env.example`, `CLAUDE.md`, `pyproject.toml` | 4 | 48 |
+| 2: Agent Loop + Tool Dispatch | `agent.py` (partial) | ~14 | ~62 |
+| 3: FastAPI Server + SSE Streaming | `agent.py` (complete), `static/index.html` (placeholder) | ~7 | ~69 |
 | 4: Frontend UI | `static/index.html` (complete) | 0 (manual) | ~69 |
 
 ## New Files After All 4 Phases
@@ -880,14 +952,14 @@ CosmoLog/
 
   # Modified files
   pyproject.toml         # 4 new dependencies added
-  .env.example           # GEMINI_API_KEY, GEMINI_MODEL added
+  .env.example           # GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, GEMINI_MODEL added
   CLAUDE.md              # Agent architecture section added
 
   # New test files
   tests/
     test_agent_prompt.py # Phase 1: 4 tests
-    test_agent.py        # Phase 2: ~11 tests
-    test_agent_server.py # Phase 3: ~5 tests
+    test_agent.py        # Phase 2: ~14 tests
+    test_agent_server.py # Phase 3: ~7 tests
 ```
 
 ## Key Design Decisions
