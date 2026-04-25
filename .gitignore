@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+
+# Environment
+.env
+
+# Runtime data
+space_journal.json
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Personal Claude config
+CLAUDE.local.md
+
+# OS
+.DS_Store

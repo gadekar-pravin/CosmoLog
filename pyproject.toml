@@ -1,0 +1,32 @@
+[project]
+name = "cosmolog"
+version = "0.1.0"
+description = "NASA Space Mission Journal Dashboard -- MCP + Prefab"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=3.0.0",
+    "prefab-ui",
+    "httpx",
+    "python-dotenv",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "respx",
+    "ruff",
+]
+
+[project.scripts]
+cosmolog = "mcp_server:main"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 99
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
