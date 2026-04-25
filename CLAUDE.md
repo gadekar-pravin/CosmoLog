@@ -6,12 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CosmoLog is a NASA Space Mission Journal Dashboard — an MCP application with 3 tools (`fetch_space_data`, `manage_space_journal`, `show_space_dashboard`) built with FastMCP and Prefab UI.
 
-## Specifications
-
-Implementation details are in the specs — read them before writing code:
-- @functional-specification.md
-- @technical-specification.md
-
 ## Prefab UI Reference
 
 The Prefab framework source is at `../prefab/`. When unsure about a component API, check the actual source:
