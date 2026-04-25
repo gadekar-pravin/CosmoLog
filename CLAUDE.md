@@ -95,6 +95,16 @@ Always use `uv`, never `pip`.
 - The client is module-level in `mcp_server.py` (not per-call) so the cache persists
 - `.env` file loaded via `python-dotenv` for `NASA_API_KEY`
 
+## Logging
+
+- `logging_config.py` centralizes all logging setup — call `configure_logging()` from entry points (`agent.py`, `mcp_server.py`)
+- `LOG_LEVEL` env var controls verbosity (default: `INFO`). Set to `DEBUG` for cache details and truncated payloads
+- Per-module loggers via `logging.getLogger(__name__)` — standard Python pattern
+- **Correlation IDs**: Each `/chat` request gets a UUID prefix (`[a1b2c3d4]`) that appears in every log line for that request chain, using `contextvars.ContextVar` (async-safe)
+- Large payloads (Gemini responses, tool results) are truncated to 500 chars via `_truncate()` at DEBUG level
+- **API key safety**: Never log raw `params` dicts from NASA client (they contain `api_key`). Log only semantic parameters (date, rover, sol, etc.)
+- Third-party loggers (`httpx`, `httpcore`, `google`, `uvicorn.access`) are quieted to WARNING
+
 ## Docs
 
 - `docs/` contains functional spec, technical spec, and per-phase implementation plans (phases 1–5)

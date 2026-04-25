@@ -19,6 +19,9 @@ space_journal.json
 # Personal Claude config
 CLAUDE.local.md
 
+# Logs
+logs/
+
 # OS
 .DS_Store
 tmp

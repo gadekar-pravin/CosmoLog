@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import time
+import uuid
 from collections.abc import AsyncGenerator, Callable
 from typing import Any
 
@@ -15,7 +18,11 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from sse_starlette.sse import EventSourceResponse
 
 from agent_prompt import SYSTEM_PROMPT
+from logging_config import _truncate, configure_logging, set_correlation_id
 from mcp_server import fetch_space_data, manage_space_journal, show_space_dashboard
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -155,6 +162,7 @@ def _get_gemini_client() -> genai.Client:
         raise RuntimeError("Missing GOOGLE_CLOUD_PROJECT, required for Vertex AI Gemini access.")
 
     _gemini_client = genai.Client(vertexai=True, project=project, location=location)
+    logger.info("gemini_client_init project=%s location=%s", project, location)
     return _gemini_client
 
 
@@ -202,16 +210,35 @@ def _part_function_call(part: Any) -> Any | None:
 def _dispatch_tool(name: str, args: dict[str, Any]) -> tuple[Any, str | None]:
     tool = TOOL_REGISTRY.get(name)
     if tool is None:
+        logger.warning("unknown_tool name=%s", name)
         return {"status": "error", "message": f"Unknown tool: {name}"}, None
 
     coerced_args = _coerce_tool_args(name, args)
+    logger.info("tool_dispatch name=%s args=%s", name, _truncate(coerced_args))
+    t0 = time.perf_counter()
     try:
         result = tool(**coerced_args)
+        duration_ms = (time.perf_counter() - t0) * 1000
         if name == "show_space_dashboard":
             html = result.html()
+            logger.info(
+                "tool_success name=%s duration_ms=%.1f html_len=%d",
+                name,
+                duration_ms,
+                len(html),
+            )
             return "Dashboard rendered successfully", html
+        logger.info(
+            "tool_success name=%s duration_ms=%.1f result_type=%s",
+            name,
+            duration_ms,
+            type(result).__name__,
+        )
+        logger.debug("tool_result_detail name=%s result=%s", name, _truncate(result))
         return _serialize_result(result), None
     except Exception as exc:
+        duration_ms = (time.perf_counter() - t0) * 1000
+        logger.error("tool_error name=%s duration_ms=%.1f", name, duration_ms, exc_info=True)
         return {"status": "error", "message": str(exc)}, None
 
 
@@ -219,14 +246,22 @@ async def agent_loop(
     message: str,
     history: list[types.Content],
 ) -> AsyncGenerator[dict[str, Any], None]:
+    logger.info("agent_loop_start message_len=%d history_size=%d", len(message), len(history))
     yield {"type": "start", "data": {}}
 
     history.append(types.Content(role="user", parts=[types.Part.from_text(text=message)]))
 
+    iteration = 0
     try:
         client = _get_gemini_client()
 
-        for _ in range(MAX_ITERATIONS):
+        for iteration in range(1, MAX_ITERATIONS + 1):
+            logger.info(
+                "gemini_call iteration=%d model=%s history_len=%d",
+                iteration,
+                MODEL,
+                len(history),
+            )
             response = await client.aio.models.generate_content(
                 model=MODEL,
                 contents=history,
@@ -242,6 +277,24 @@ async def agent_loop(
                 for part in parts
                 if (function_call := _part_function_call(part)) is not None
             ]
+
+            logger.info(
+                "gemini_response iteration=%d text_parts=%d function_calls=%d",
+                iteration,
+                len(text_parts),
+                len(function_calls),
+            )
+            logger.debug(
+                "gemini_response_text iteration=%d text=%s",
+                iteration,
+                _truncate("\n".join(text_parts)),
+            )
+            for fc in function_calls:
+                logger.debug(
+                    "gemini_function_call name=%s args=%s",
+                    fc.name,
+                    _truncate(dict(fc.args or {})),
+                )
 
             if not function_calls:
                 if text_parts:
@@ -275,6 +328,7 @@ async def agent_loop(
 
             history.append(types.Content(role="user", parts=response_parts))
 
+        logger.warning("agent_loop_max_iterations max=%d", MAX_ITERATIONS)
         yield {
             "type": "text",
             "data": {
@@ -282,8 +336,10 @@ async def agent_loop(
             },
         }
     except Exception as exc:
+        logger.exception("agent_loop_error")
         yield {"type": "error", "data": {"message": str(exc)}}
     finally:
+        logger.info("agent_loop_done iterations=%d", iteration)
         yield {"type": "done", "data": {}}
 
 
@@ -296,6 +352,7 @@ async def _sse_event_stream(
             data = event.get("data", {})
             yield {"event": event_type, "data": json.dumps(data)}
     except Exception as exc:
+        logger.exception("sse_stream_error")
         yield {"event": "error", "data": json.dumps({"message": str(exc)})}
         yield {"event": "done", "data": json.dumps({})}
 
@@ -307,12 +364,16 @@ async def root() -> FileResponse:
 
 @app.post("/chat")
 async def chat(request: ChatRequest) -> EventSourceResponse:
+    cid = uuid.uuid4().hex[:8]
+    set_correlation_id(cid)
+    logger.info("chat_request correlation_id=%s message_len=%d", cid, len(request.message))
     return EventSourceResponse(_sse_event_stream(request.message))
 
 
 @app.post("/reset")
 async def reset() -> dict[str, str]:
     conversation_history.clear()
+    logger.info("conversation_reset")
     return {"status": "ok"}
 
 

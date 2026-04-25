@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from prefab_ui.actions import ShowToast
@@ -35,6 +36,8 @@ from prefab_ui.components import (
 )
 from prefab_ui.rx import ERROR
 
+logger = logging.getLogger(__name__)
+
 
 def build_dashboard(
     space_data: dict[str, Any] | None = None,
@@ -42,6 +45,17 @@ def build_dashboard(
     tag_filter: str | None = None,
 ) -> PrefabApp:
     """Build the CosmoLog Prefab dashboard from prepared data."""
+    rover_count = len(space_data.get("rover_photos", [])) if space_data else 0
+    neo_count = len(space_data.get("near_earth_objects", [])) if space_data else 0
+    entry_count = len(journal_entries) if journal_entries else 0
+    logger.info(
+        "build_dashboard apod=%s rover_count=%d neo_count=%d entry_count=%d tag_filter=%s",
+        bool(space_data and space_data.get("apod")),
+        rover_count,
+        neo_count,
+        entry_count,
+        tag_filter,
+    )
     apod = space_data.get("apod") if space_data else None
     rover_photos = space_data.get("rover_photos", []) if space_data else []
     neos = space_data.get("near_earth_objects", []) if space_data else []
@@ -67,6 +81,7 @@ def build_dashboard(
         _build_neo_section(neos)
         _build_refresh_section()
 
+    logger.debug("build_dashboard_done")
     return PrefabApp(
         title="CosmoLog",
         view=view,

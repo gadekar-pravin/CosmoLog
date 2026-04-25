@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import time
 from datetime import date, timedelta
 from typing import Any
@@ -7,6 +8,8 @@ from typing import Any
 import httpx
 
 from models import APODData, NearEarthObject, RoverPhoto, SpaceData
+
+logger = logging.getLogger(__name__)
 
 CACHE_TTL_SECONDS = 300
 
@@ -27,12 +30,17 @@ class NASAClient:
         if key in self._cache:
             timestamp, value = self._cache[key]
             if time.time() - timestamp < CACHE_TTL_SECONDS:
+                logger.debug("cache_hit key=%s", key)
                 return value
+            logger.debug("cache_expired key=%s", key)
             del self._cache[key]
+        else:
+            logger.debug("cache_miss key=%s", key)
         return None
 
     def _set_cached(self, key: str, value: object) -> None:
         self._cache[key] = (time.time(), value)
+        logger.debug("cache_set key=%s", key)
 
     def _normalize_apod(self, data: dict[str, Any]) -> APODData:
         return APODData(
@@ -78,12 +86,14 @@ class NASAClient:
         if cached is not None:
             return cached  # type: ignore[return-value]
 
+        logger.info("fetch endpoint=apod date=%s", apod_date)
         params = {"api_key": self.api_key, "thumbs": "true"}
         if apod_date is not None:
             params["date"] = apod_date
 
         response = self.client.get(APOD_URL, params=params)
         response.raise_for_status()
+        logger.info("fetch_done endpoint=apod status=%d", response.status_code)
         apod = self._normalize_apod(response.json())
         self._set_cached(cache_key, apod)
         return apod
@@ -94,6 +104,7 @@ class NASAClient:
         if cached is not None:
             return cached  # type: ignore[return-value]
 
+        logger.info("fetch endpoint=rover rover=%s sol=%s count=%d", rover, sol, count)
         photos_data: list[dict[str, Any]]
         if sol is not None:
             photos_data = self._request_rover_endpoint(rover, sol)
@@ -103,6 +114,7 @@ class NASAClient:
             photos_data = self._request_rover_latest_endpoint(rover)
 
         rover_photos = [self._normalize_rover_photo(photo) for photo in photos_data[:count]]
+        logger.info("fetch_done endpoint=rover photo_count=%d", len(rover_photos))
         self._set_cached(cache_key, rover_photos)
         return rover_photos
 
@@ -130,6 +142,7 @@ class NASAClient:
         if cached is not None:
             return cached  # type: ignore[return-value]
 
+        logger.info("fetch endpoint=neo start=%s end_days=%d", start_date_str, days)
         end_date_str = (start_date + timedelta(days=days)).isoformat()
         response = self.client.get(
             NEO_URL,
@@ -140,15 +153,18 @@ class NASAClient:
             },
         )
         response.raise_for_status()
+        logger.info("fetch_done endpoint=neo status=%d", response.status_code)
 
         neos: list[NearEarthObject] = []
         for neo_list in response.json()["near_earth_objects"].values():
             for neo in neo_list:
                 try:
                     neos.append(self._normalize_neo(neo))
-                except (KeyError, IndexError, TypeError, ValueError):
+                except (KeyError, IndexError, TypeError, ValueError) as exc:
+                    logger.debug("neo_normalize_skip id=%s error=%s", neo.get("id"), exc)
                     continue
 
+        logger.info("fetch_done endpoint=neo neo_count=%d", len(neos))
         self._set_cached(cache_key, neos)
         return neos
 
@@ -161,6 +177,14 @@ class NASAClient:
         neo_days: int = 7,
     ) -> SpaceData:
         """Fetch all NASA data, collecting partial results and errors."""
+        logger.info(
+            "fetch_all date=%s rover=%s sol=%s photo_count=%d neo_days=%d",
+            apod_date,
+            rover,
+            sol,
+            photo_count,
+            neo_days,
+        )
         errors: list[str] = []
         apod: APODData | None = None
         rover_photos: list[RoverPhoto] = []
@@ -176,6 +200,7 @@ class NASAClient:
             TypeError,
             ValueError,
         ) as exc:
+            logger.warning("fetch_all_error api=APOD error=%s", exc)
             errors.append(self._format_error("APOD", exc))
 
         try:
@@ -188,6 +213,7 @@ class NASAClient:
             TypeError,
             ValueError,
         ) as exc:
+            logger.warning("fetch_all_error api=MarsRover error=%s", exc)
             errors.append(self._format_error("Mars Rover Photos", exc))
 
         try:
@@ -200,8 +226,16 @@ class NASAClient:
             TypeError,
             ValueError,
         ) as exc:
+            logger.warning("fetch_all_error api=NeoWs error=%s", exc)
             errors.append(self._format_error("NeoWs", exc))
 
+        logger.info(
+            "fetch_all_done apod=%s rover_count=%d neo_count=%d error_count=%d",
+            apod is not None,
+            len(rover_photos),
+            len(neos),
+            len(errors),
+        )
         return SpaceData(
             apod=apod,
             rover_photos=rover_photos,

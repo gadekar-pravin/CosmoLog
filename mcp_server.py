@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
@@ -7,7 +8,11 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 from prefab_ui.app import PrefabApp
 
+from logging_config import configure_logging
 from nasa_client import NASAClient
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -34,6 +39,14 @@ def fetch_space_data(
         photo_count: Number of rover photos to return. Defaults to 3.
         neo_days: Number of days ahead to check for NEOs. Defaults to 7.
     """
+    logger.info(
+        "fetch_space_data date=%s rover=%s sol=%s photo_count=%d neo_days=%d",
+        date,
+        rover,
+        sol,
+        photo_count,
+        neo_days,
+    )
     result = _nasa_client.fetch_all(
         apod_date=date,
         rover=rover,
@@ -41,7 +54,9 @@ def fetch_space_data(
         photo_count=photo_count,
         neo_days=neo_days,
     )
-    return result.model_dump()
+    data = result.model_dump()
+    logger.info("fetch_space_data_done error_count=%d", len(data.get("errors", [])))
+    return data
 
 
 @mcp.tool()
@@ -59,6 +74,13 @@ def manage_space_journal(
         payload: Required for 'create' and 'update'. Entry data dict.
         tag_filter: Optional tag to filter entries during 'read'.
     """
+    logger.info(
+        "manage_space_journal op=%s entry_id=%s has_payload=%s tag_filter=%s",
+        operation,
+        entry_id,
+        payload is not None,
+        tag_filter,
+    )
     from journal import create_entry, delete_entry, read_entries, update_entry
 
     match operation:
@@ -91,6 +113,12 @@ def show_space_dashboard(
         journal_entries: Entries returned from manage_space_journal read operation.
         tag_filter: Active tag filter for journal entries.
     """
+    logger.info(
+        "show_space_dashboard has_space_data=%s entry_count=%d tag_filter=%s",
+        space_data is not None,
+        len(journal_entries) if journal_entries else 0,
+        tag_filter,
+    )
     from dashboard import build_dashboard
 
     return build_dashboard(
