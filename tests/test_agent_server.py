@@ -94,7 +94,7 @@ async def test_root_serves_html():
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "CosmoLog AI Agent" in response.text
+    assert "CosmoLog" in response.text
     assert "Mission Chat" in response.text
     assert "Live Dashboard" in response.text
     assert "Fetch today's APOD and show it on the dashboard" in response.text

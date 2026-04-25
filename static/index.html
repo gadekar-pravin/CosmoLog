@@ -3,24 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CosmoLog AI Agent</title>
+  <title>CosmoLog - Mission Console</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0a1a;
-      --surface: #0f0f2e;
-      --surface-hover: #1a1a3e;
-      --cosmic-blue: #4f8cff;
-      --nebula-purple: #a855f7;
+      --bg: #05060d;
+      --surface: #0d0f1a;
+      --surface-hover: #151829;
+      --cosmic-blue: #6ea8ff;
+      --nebula-purple: #b785ff;
+      --accent-green: #5af2c7;
       --star-white: #e2e8f0;
       --muted: #64748b;
       --success: #22c55e;
       --danger: #ef4444;
-      --border: rgba(79, 140, 255, 0.15);
-      --glass: rgba(15, 15, 46, 0.8);
-      --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      --border: rgba(110, 168, 255, 0.12);
+      --border-strong: rgba(110, 168, 255, 0.22);
+      --glass: rgba(13, 15, 26, 0.82);
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+      --sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     * {
@@ -37,11 +41,11 @@
       margin: 0;
       overflow: hidden;
       background:
-        radial-gradient(circle at 20% 20%, rgba(79, 140, 255, 0.16), transparent 30%),
-        radial-gradient(circle at 80% 10%, rgba(168, 85, 247, 0.13), transparent 28%),
+        radial-gradient(circle at 20% 20%, rgba(110, 168, 255, 0.1), transparent 30%),
+        radial-gradient(circle at 80% 10%, rgba(183, 133, 255, 0.08), transparent 28%),
         var(--bg);
       color: var(--star-white);
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: var(--sans);
     }
 
     body::before,
@@ -54,22 +58,22 @@
     }
 
     body::before {
-      opacity: 0.6;
+      opacity: 0.4;
       background-image:
-        radial-gradient(circle, rgba(226, 232, 240, 0.7) 0 1px, transparent 1px),
-        radial-gradient(circle, rgba(79, 140, 255, 0.45) 0 1px, transparent 1px);
+        radial-gradient(circle, rgba(226, 232, 240, 0.5) 0 1px, transparent 1px),
+        radial-gradient(circle, rgba(110, 168, 255, 0.3) 0 1px, transparent 1px);
       background-position: 0 0, 30px 40px;
       background-size: 95px 95px, 140px 140px;
       animation: starDrift 28s linear infinite;
     }
 
     body::after {
-      opacity: 0.42;
+      opacity: 0.3;
       background-image:
-        radial-gradient(circle at 12% 25%, rgba(226, 232, 240, 0.8) 0 1px, transparent 1px),
-        radial-gradient(circle at 46% 62%, rgba(226, 232, 240, 0.55) 0 1px, transparent 1px),
-        radial-gradient(circle at 78% 32%, rgba(226, 232, 240, 0.65) 0 1px, transparent 1px),
-        radial-gradient(circle at 88% 82%, rgba(168, 85, 247, 0.55) 0 1px, transparent 1px);
+        radial-gradient(circle at 12% 25%, rgba(226, 232, 240, 0.6) 0 1px, transparent 1px),
+        radial-gradient(circle at 46% 62%, rgba(226, 232, 240, 0.4) 0 1px, transparent 1px),
+        radial-gradient(circle at 78% 32%, rgba(226, 232, 240, 0.45) 0 1px, transparent 1px),
+        radial-gradient(circle at 88% 82%, rgba(183, 133, 255, 0.35) 0 1px, transparent 1px);
       background-size: 260px 260px;
       animation: starDriftSlow 48s linear infinite;
     }
@@ -106,14 +110,16 @@
       clip-path: inset(50%);
     }
 
+    /* ── App shell ─────────────────────────── */
+
     .app-shell {
       position: relative;
       z-index: 1;
       display: flex;
       flex-direction: column;
       height: 100vh;
-      padding: 18px;
-      gap: 14px;
+      padding: 14px 14px 0;
+      gap: 10px;
     }
 
     .app-header,
@@ -127,84 +133,166 @@
       box-shadow: var(--shadow);
     }
 
+    /* ── Header ────────────────────────────── */
+
     .app-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-height: 70px;
-      padding: 14px 18px;
-      border-radius: 12px;
+      min-height: 56px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      gap: 16px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
     }
 
     .brand {
       display: flex;
       min-width: 0;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .brand-mark {
-      display: grid;
-      width: 42px;
-      height: 42px;
+      display: flex;
+      width: 36px;
+      height: 36px;
       flex: 0 0 auto;
-      place-items: center;
-      border: 1px solid rgba(79, 140, 255, 0.34);
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at 38% 36%, #ffffff 0 3px, transparent 4px),
-        radial-gradient(circle at 50% 50%, rgba(79, 140, 255, 0.42), transparent 62%),
-        rgba(26, 26, 62, 0.9);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-mark svg {
+      width: 36px;
+      height: 36px;
     }
 
     .brand h1 {
       margin: 0;
       color: #f8fafc;
-      font-size: 1.08rem;
+      font-size: 1rem;
+      font-weight: 400;
       line-height: 1.2;
       letter-spacing: 0;
+      white-space: nowrap;
     }
 
-    .brand p {
-      margin: 4px 0 0;
+    .brand h1 strong {
+      font-weight: 700;
+    }
+
+    .console-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 500;
       color: var(--muted);
-      font-size: 0.86rem;
-      line-height: 1.35;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
     }
 
-    .reset-button,
-    .send-button,
-    .prompt-button {
-      border: 1px solid var(--border);
+    /* ── Telemetry strip ───────────────────── */
+
+    .telemetry {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .telem-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .telem-label {
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 0.65rem;
+    }
+
+    .telem-value {
       color: var(--star-white);
+      font-weight: 500;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+
+    .run-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border: 1px solid rgba(90, 242, 199, 0.3);
+      border-radius: 8px;
+      background: rgba(90, 242, 199, 0.1);
+      color: var(--accent-green);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
       transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    .run-button:hover:not(:disabled) {
+      background: rgba(90, 242, 199, 0.18);
+      border-color: rgba(90, 242, 199, 0.5);
+      transform: translateY(-1px);
     }
 
     .reset-button {
       flex: 0 0 auto;
-      padding: 10px 13px;
-      border-radius: 10px;
-      background: rgba(26, 26, 62, 0.74);
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(13, 15, 26, 0.74);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
     }
 
-    .reset-button:hover:not(:disabled),
-    .prompt-button:hover:not(:disabled) {
-      border-color: rgba(79, 140, 255, 0.42);
+    .reset-button:hover:not(:disabled) {
+      border-color: var(--border-strong);
       background: var(--surface-hover);
-      transform: translateY(-1px);
+      color: var(--star-white);
     }
+
+    /* ── Main grid ─────────────────────────── */
 
     .main-grid {
       display: flex;
       min-height: 0;
       flex: 1;
-      gap: 14px;
+      gap: 10px;
     }
 
     .chat-panel,
     .dashboard-panel {
       min-height: 0;
-      border-radius: 12px;
+      border-radius: 10px;
     }
 
     .chat-panel {
@@ -224,33 +312,100 @@
       overflow: hidden;
     }
 
+    /* ── Panel headings ────────────────────── */
+
     .panel-heading {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      padding: 16px 18px;
+      gap: 10px;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border);
-      background: rgba(10, 10, 26, 0.36);
+      background: rgba(5, 6, 13, 0.5);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px rgba(90, 242, 199, 0.5);
+      flex: 0 0 auto;
     }
 
     .panel-heading h2 {
       margin: 0;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       color: #f8fafc;
-      font-size: 0.94rem;
       line-height: 1.2;
-      letter-spacing: 0;
+    }
+
+    .panel-number {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: rgba(100, 116, 139, 0.5);
+    }
+
+    .window-dots {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+      margin-right: 8px;
+      color: rgba(100, 116, 139, 0.3);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
     }
 
     .status-pill {
-      border: 1px solid rgba(34, 197, 94, 0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid rgba(90, 242, 199, 0.2);
       border-radius: 999px;
-      padding: 5px 9px;
-      color: #bbf7d0;
-      background: rgba(34, 197, 94, 0.08);
-      font-size: 0.76rem;
+      padding: 4px 10px;
+      color: var(--accent-green);
+      background: rgba(90, 242, 199, 0.06);
+      font-family: var(--mono);
+      font-size: 0.68rem;
       font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
+
+    .status-pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-pill.standby {
+      color: var(--muted);
+      border-color: rgba(100, 116, 139, 0.2);
+      background: rgba(100, 116, 139, 0.06);
+    }
+
+    .status-pill.rendering {
+      color: var(--cosmic-blue);
+      border-color: rgba(110, 168, 255, 0.2);
+      background: rgba(110, 168, 255, 0.06);
+    }
+
+    /* ── Messages area ─────────────────────── */
 
     .messages {
       display: flex;
@@ -260,7 +415,7 @@
       gap: 12px;
       overflow-y: auto;
       padding: 18px;
-      scrollbar-color: rgba(79, 140, 255, 0.35) transparent;
+      scrollbar-color: rgba(110, 168, 255, 0.3) transparent;
     }
 
     .message-row {
@@ -288,12 +443,12 @@
     }
 
     .message-row.user .message-bubble {
-      border-color: rgba(79, 140, 255, 0.36);
-      background: rgba(79, 140, 255, 0.2);
+      border-color: rgba(110, 168, 255, 0.3);
+      background: rgba(110, 168, 255, 0.15);
     }
 
     .message-row.agent .message-bubble {
-      background: rgba(15, 15, 46, 0.86);
+      background: rgba(13, 15, 26, 0.86);
     }
 
     .message-row.error .message-bubble {
@@ -302,21 +457,101 @@
       color: #fecaca;
     }
 
+    /* ── Chat empty state ──────────────────── */
+
     .empty-chat {
       display: grid;
       min-height: 170px;
       place-items: center;
-      padding: 18px;
-      color: var(--muted);
+      padding: 24px 18px;
       text-align: center;
     }
 
-    .empty-chat strong {
-      display: block;
-      margin-bottom: 7px;
-      color: var(--star-white);
-      font-size: 1rem;
+    .empty-chat-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
     }
+
+    .orbit-anim {
+      position: relative;
+      width: 140px;
+      height: 140px;
+    }
+
+    .orbit-anim .orbit-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .orbit-anim .orbit-ring-1 {
+      width: 100px;
+      height: 100px;
+      border-color: rgba(110, 168, 255, 0.2);
+    }
+
+    .orbit-anim .orbit-ring-2 {
+      width: 140px;
+      height: 140px;
+      border-color: rgba(183, 133, 255, 0.15);
+    }
+
+    .orbit-anim .planet-core {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cosmic-blue), var(--nebula-purple));
+      box-shadow: 0 0 24px rgba(110, 168, 255, 0.4);
+      transform: translate(-50%, -50%);
+    }
+
+    .orbit-anim .orbit-dot {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+    }
+
+    .orbit-anim .orbit-dot-1 {
+      background: var(--cosmic-blue);
+      box-shadow: 0 0 10px rgba(110, 168, 255, 0.6);
+      animation: orbitChat1 6s linear infinite;
+    }
+
+    .orbit-anim .orbit-dot-2 {
+      background: var(--nebula-purple);
+      box-shadow: 0 0 10px rgba(183, 133, 255, 0.6);
+      width: 6px;
+      height: 6px;
+      animation: orbitChat2 9s linear infinite;
+    }
+
+    .empty-chat-title {
+      color: #f8fafc;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .empty-chat-sub {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.5;
+      margin: 4px 0 0;
+      max-width: 300px;
+    }
+
+    /* ── Event cards ───────────────────────── */
 
     .event-card {
       width: min(92%, 720px);
@@ -326,11 +561,11 @@
     }
 
     .event-card.thinking {
-      border-color: rgba(168, 85, 247, 0.28);
+      border-color: rgba(183, 133, 255, 0.28);
     }
 
     .event-card.tool {
-      border-color: rgba(79, 140, 255, 0.28);
+      border-color: rgba(110, 168, 255, 0.28);
     }
 
     .event-card details {
@@ -356,7 +591,7 @@
       flex: 0 0 auto;
       color: var(--muted);
       content: "+";
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--mono);
     }
 
     .event-card details[open] > summary::after {
@@ -389,12 +624,12 @@
       max-height: 260px;
       margin: 10px 0 0;
       overflow: auto;
-      border: 1px solid rgba(79, 140, 255, 0.16);
+      border: 1px solid rgba(110, 168, 255, 0.12);
       border-radius: 10px;
       padding: 10px;
       background: rgba(2, 6, 23, 0.55);
       color: #dbeafe;
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--mono);
       font-size: 0.78rem;
       line-height: 1.45;
       white-space: pre-wrap;
@@ -412,6 +647,8 @@
       font-size: 0.86rem;
     }
 
+    /* ── Typing indicator ──────────────────── */
+
     .typing-row {
       display: none;
       padding: 0 18px 14px;
@@ -428,7 +665,7 @@
       border: 1px solid var(--border);
       border-radius: 999px;
       padding: 10px 12px;
-      background: rgba(15, 15, 46, 0.86);
+      background: rgba(13, 15, 26, 0.86);
       color: var(--muted);
       font-size: 0.86rem;
     }
@@ -449,15 +686,17 @@
       animation-delay: 240ms;
     }
 
+    /* ── Composer ───────────────────────────── */
+
     .composer {
       border-top: 1px solid var(--border);
       padding: 14px;
-      background: rgba(10, 10, 26, 0.42);
+      background: rgba(5, 6, 13, 0.42);
     }
 
     .suggested-prompts {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
       margin-bottom: 12px;
     }
@@ -467,13 +706,51 @@
     }
 
     .prompt-button {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
       width: 100%;
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 10px 12px;
-      background: rgba(26, 26, 62, 0.62);
-      color: #dbeafe;
+      background: rgba(13, 15, 26, 0.62);
+      color: #94a3b8;
       text-align: left;
       line-height: 1.35;
+      font-size: 0.84rem;
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    .prompt-button:hover:not(:disabled) {
+      border-color: var(--border-strong);
+      background: var(--surface-hover);
+      transform: translateY(-1px);
+      color: var(--star-white);
+    }
+
+    .prompt-icon {
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      margin-top: 1px;
+      color: var(--cosmic-blue);
+    }
+
+    .prompt-button:nth-child(2) .prompt-icon {
+      color: var(--accent-green);
+    }
+
+    .prompt-button:nth-child(3) .prompt-icon {
+      color: var(--nebula-purple);
+    }
+
+    .prompt-button:nth-child(4) .prompt-icon {
+      color: #f59e0b;
+    }
+
+    .prompt-button strong {
+      color: var(--star-white);
+      font-weight: 600;
     }
 
     .input-row {
@@ -497,16 +774,20 @@
 
     .send-button {
       flex: 0 0 auto;
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 0 16px;
       background: linear-gradient(135deg, var(--cosmic-blue), var(--nebula-purple));
       color: #ffffff;
       font-weight: 700;
+      transition: transform 160ms ease;
     }
 
     .send-button:hover:not(:disabled) {
       transform: translateY(-1px);
     }
+
+    /* ── Dashboard area ────────────────────── */
 
     .dashboard-stage {
       position: relative;
@@ -531,57 +812,63 @@
       text-align: center;
     }
 
-    .placeholder-orbit {
+    .dashboard-placeholder-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    /* ── Dashboard solar system SVG ────────── */
+
+    .solar-system {
       position: relative;
-      width: min(270px, 70vw);
-      aspect-ratio: 1;
-      margin: 0 auto 24px;
-      border: 1px solid rgba(79, 140, 255, 0.2);
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at 50% 50%, rgba(79, 140, 255, 0.28) 0 17%, transparent 18%),
-        radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.18), transparent 62%);
-      animation: pulse 2.8s ease-in-out infinite;
+      width: 200px;
+      height: 200px;
     }
 
-    .placeholder-orbit::before,
-    .placeholder-orbit::after {
-      position: absolute;
-      border-radius: 50%;
-      content: "";
+    .solar-system svg {
+      width: 100%;
+      height: 100%;
     }
 
-    .placeholder-orbit::before {
-      inset: 34px;
-      border: 1px solid rgba(226, 232, 240, 0.16);
-    }
-
-    .placeholder-orbit::after {
-      width: 13px;
-      height: 13px;
-      top: 28px;
-      left: 50%;
-      background: #ffffff;
-      box-shadow: 0 0 22px rgba(79, 140, 255, 0.72);
-      transform-origin: 0 106px;
-      animation: orbit 8s linear infinite;
-    }
-
-    .placeholder-copy {
-      max-width: 430px;
-      margin: 0 auto;
-    }
-
-    .placeholder-copy h3 {
-      margin: 0 0 10px;
-      font-size: 1.1rem;
-      letter-spacing: 0;
-    }
-
-    .placeholder-copy p {
+    .dashboard-hero-title {
       margin: 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #f8fafc;
+      max-width: 400px;
+    }
+
+    .dashboard-hero-title .highlight {
+      color: var(--accent-green);
+    }
+
+    .dashboard-hero-sub {
+      margin: 6px 0 0;
       color: var(--muted);
+      font-size: 0.86rem;
       line-height: 1.55;
+      max-width: 400px;
+    }
+
+    .kbd-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 5px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .kbd-hint kbd {
+      font-family: var(--mono);
+      font-weight: 600;
+      color: var(--star-white);
     }
 
     .dashboard-loading {
@@ -637,6 +924,83 @@
       animation-delay: 240ms;
     }
 
+    /* ── Status bar (footer) ───────────────── */
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 18px;
+      background: rgba(5, 6, 13, 0.7);
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      gap: 16px;
+      flex: 0 0 auto;
+      backdrop-filter: blur(8px);
+    }
+
+    .sb-zone {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+    }
+
+    .sb-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 6px rgba(90, 242, 199, 0.5);
+    }
+
+    .sb-label {
+      text-transform: uppercase;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+
+    .sb-value {
+      color: var(--star-white);
+    }
+
+    .sb-sep {
+      color: rgba(100, 116, 139, 0.3);
+    }
+
+    .sb-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .signal-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 10px;
+    }
+
+    .signal-bars span {
+      width: 3px;
+      border-radius: 1px;
+      background: var(--accent-green);
+    }
+
+    .signal-bars span:nth-child(1) { height: 4px; }
+    .signal-bars span:nth-child(2) { height: 6px; }
+    .signal-bars span:nth-child(3) { height: 8px; }
+    .signal-bars span:nth-child(4) { height: 10px; }
+
+    .sb-green {
+      color: var(--accent-green);
+    }
+
+    /* ── Responsive ────────────────────────── */
+
     @media (max-width: 1024px) {
       body {
         overflow: auto;
@@ -664,20 +1028,41 @@
       .dashboard-panel {
         min-height: 620px;
       }
+
+      .telemetry {
+        display: none;
+      }
     }
 
     @media (max-width: 640px) {
       .app-shell {
-        padding: 10px;
+        padding: 8px 8px 0;
       }
 
       .app-header {
-        align-items: flex-start;
-        flex-direction: column;
+        flex-wrap: wrap;
+        padding: 10px 12px;
+      }
+
+      .header-left {
+        flex-wrap: wrap;
+      }
+
+      .console-tag {
+        display: none;
+      }
+
+      .run-button {
+        font-size: 0.7rem;
+        padding: 6px 10px;
       }
 
       .reset-button {
-        width: 100%;
+        display: none;
+      }
+
+      .suggested-prompts {
+        grid-template-columns: 1fr;
       }
 
       .input-row {
@@ -693,7 +1078,20 @@
         max-width: 100%;
         width: 100%;
       }
+
+      .status-bar {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        padding: 6px 10px;
+      }
+
+      .sb-zone:last-child {
+        display: none;
+      }
     }
+
+    /* ── Animations ────────────────────────── */
 
     @keyframes fadeSlideUp {
       from {
@@ -727,15 +1125,6 @@
       }
     }
 
-    @keyframes orbit {
-      from {
-        transform: rotate(0deg) translateX(106px) rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg) translateX(106px) rotate(-360deg);
-      }
-    }
-
     @keyframes starDrift {
       from {
         background-position: 0 0, 30px 40px;
@@ -753,33 +1142,104 @@
         transform: translate3d(-80px, 40px, 0);
       }
     }
+
+    @keyframes orbitChat1 {
+      from { transform: translate(-50%, -50%) rotate(0deg) translateX(50px) rotate(0deg); }
+      to   { transform: translate(-50%, -50%) rotate(360deg) translateX(50px) rotate(-360deg); }
+    }
+
+    @keyframes orbitChat2 {
+      from { transform: translate(-50%, -50%) rotate(0deg) translateX(70px) rotate(0deg); }
+      to   { transform: translate(-50%, -50%) rotate(360deg) translateX(70px) rotate(-360deg); }
+    }
+
+    @keyframes orbitDash1 {
+      from { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+      to   { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+    }
+
+    @keyframes orbitDash2 {
+      from { transform: rotate(180deg) translateX(85px) rotate(-180deg); }
+      to   { transform: rotate(540deg) translateX(85px) rotate(-540deg); }
+    }
+
+    @keyframes orbitDash3 {
+      from { transform: rotate(90deg) translateX(85px) rotate(-90deg); }
+      to   { transform: rotate(450deg) translateX(85px) rotate(-450deg); }
+    }
   </style>
 </head>
 <body>
   <div class="app-shell">
     <header class="app-header">
-      <div class="brand" aria-label="CosmoLog AI Agent">
-        <div class="brand-mark" aria-hidden="true"></div>
-        <div>
-          <h1>CosmoLog AI Agent</h1>
-          <p>NASA data, mission journal, and live dashboard in one agent loop.</p>
+      <div class="header-left">
+        <div class="brand" aria-label="CosmoLog Mission Console">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="18" cy="18" r="17" stroke="rgba(110,168,255,0.3)" stroke-width="1"/>
+              <ellipse cx="18" cy="18" rx="12" ry="6" stroke="rgba(110,168,255,0.5)" stroke-width="0.8" transform="rotate(-20 18 18)"/>
+              <ellipse cx="18" cy="18" rx="14" ry="5" stroke="rgba(183,133,255,0.35)" stroke-width="0.8" transform="rotate(30 18 18)"/>
+              <circle cx="18" cy="18" r="4" fill="url(#brandGrad)"/>
+              <circle cx="28" cy="14" r="2" fill="#6ea8ff" opacity="0.8"/>
+              <circle cx="9" cy="22" r="1.5" fill="#b785ff" opacity="0.7"/>
+              <defs><linearGradient id="brandGrad" x1="14" y1="14" x2="22" y2="22"><stop stop-color="#6ea8ff"/><stop offset="1" stop-color="#b785ff"/></linearGradient></defs>
+            </svg>
+          </div>
+          <h1>Cosmo<strong>Log</strong></h1>
+        </div>
+        <span class="console-tag">AI &middot; MISSION CONSOLE</span>
+      </div>
+
+      <div class="telemetry" id="telemetry" aria-label="Telemetry">
+        <div class="telem-item">
+          <span class="telem-label">UTC</span>
+          <span class="telem-value" id="telemUtc">--:--:--</span>
+        </div>
+        <div class="telem-item">
+          <span class="telem-label">Source</span>
+          <span class="telem-value">api.nasa.gov</span>
+        </div>
+        <div class="telem-item">
+          <span class="telem-label">Latency</span>
+          <span class="telem-value" id="telemLatency">-- ms</span>
+        </div>
+        <div class="telem-item">
+          <span class="telem-label">Tokens</span>
+          <span class="telem-value" id="telemTokens">0 / 8K</span>
         </div>
       </div>
-      <button class="reset-button" id="resetButton" type="button">Reset Chat</button>
+
+      <div class="header-right">
+        <button class="run-button" id="runButton" type="button">&#9654; RUN SAMPLE MISSION</button>
+        <button class="reset-button" id="resetButton" type="button">Reset</button>
+      </div>
     </header>
 
     <main class="main-grid">
       <aside class="chat-panel" aria-label="Chat panel">
         <div class="panel-heading">
-          <h2>Mission Chat</h2>
+          <div class="panel-title">
+            <div class="panel-dot"></div>
+            <h2>Mission Chat</h2>
+            <span class="panel-number">/01</span>
+          </div>
           <span class="status-pill" id="chatStatus">Ready</span>
         </div>
 
         <div class="messages" id="messages" aria-live="polite" aria-label="Conversation">
           <div class="empty-chat" id="emptyChat">
-            <div>
-              <strong>Start a CosmoLog run</strong>
-              <span>Ask for NASA data, journal changes, or a dashboard refresh.</span>
+            <div class="empty-chat-inner">
+              <div class="orbit-anim" aria-hidden="true">
+                <div class="orbit-ring orbit-ring-1"></div>
+                <div class="orbit-ring orbit-ring-2"></div>
+                <div class="planet-core"></div>
+                <div class="orbit-dot orbit-dot-1"></div>
+                <div class="orbit-dot orbit-dot-2"></div>
+              </div>
+              <div>
+                <h3 class="empty-chat-title">Awaiting your transmission</h3>
+                <p class="empty-chat-sub">Ask for NASA data, journal changes, or a dashboard refresh.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -794,34 +1254,78 @@
 
         <form class="composer" id="chatForm">
           <div class="suggested-prompts" id="suggestedPrompts" aria-label="Suggested prompts">
-            <button class="prompt-button" type="button">Fetch today's APOD and show it on the dashboard</button>
-            <button class="prompt-button" type="button">Fetch NASA data, save the APOD to my journal, and show the dashboard</button>
-            <button class="prompt-button" type="button">Show me what's in my space journal</button>
-            <button class="prompt-button" type="button">Fetch Mars rover photos and near-Earth objects, save them all, and display everything</button>
+            <button class="prompt-button" type="button" data-prompt="Fetch today's APOD and show it on the dashboard">
+              <svg class="prompt-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M2 10h16M10 2a14 14 0 0 1 4 8 14 14 0 0 1-4 8 14 14 0 0 1-4-8 14 14 0 0 1 4-8z"/></svg>
+              <span>Fetch today's <strong>APOD</strong> and show it on the dashboard</span>
+            </button>
+            <button class="prompt-button" type="button" data-prompt="Fetch NASA data, save the APOD to my journal, and show the dashboard">
+              <svg class="prompt-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 7h4M8 10h4M8 13h2"/></svg>
+              <span>Run full pipeline &amp; log to <strong>journal</strong></span>
+            </button>
+            <button class="prompt-button" type="button" data-prompt="Show me what's in my space journal">
+              <svg class="prompt-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5a2 2 0 0 1 2-2h10v14H6a2 2 0 0 0-2 2z"/><path d="M6 17h10"/></svg>
+              <span>Read my <strong>space journal</strong></span>
+            </button>
+            <button class="prompt-button" type="button" data-prompt="Fetch Mars rover photos and near-Earth objects, save them all, and display everything">
+              <svg class="prompt-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="4"/><path d="M3 18c0-4 3-7 7-7s7 3 7 7"/><circle cx="10" cy="7" r="1.5"/></svg>
+              <span><strong>Mars rovers</strong> + <strong>near-Earth objects</strong></span>
+            </button>
           </div>
 
           <div class="input-row">
             <label class="sr-only" for="messageInput">Ask about space</label>
-            <input class="chat-input" id="messageInput" name="message" type="text" autocomplete="off" placeholder="Ask about space..." aria-label="Ask about space">
-            <button class="send-button" id="sendButton" type="submit">Send</button>
+            <input class="chat-input" id="messageInput" name="message" type="text" autocomplete="off" placeholder="Ask the agent -- coordinates, data, journal entries..." aria-label="Ask the agent">
+            <button class="send-button" id="sendButton" type="submit">Send &#8594;</button>
           </div>
         </form>
       </aside>
 
       <section class="dashboard-panel" aria-label="Dashboard panel">
         <div class="panel-heading">
-          <h2>Live Dashboard</h2>
-          <span class="status-pill" id="dashboardStatus">Waiting</span>
+          <div class="panel-title">
+            <div class="panel-dot"></div>
+            <h2>Live Dashboard</h2>
+            <span class="panel-number">/02</span>
+          </div>
+          <span class="window-dots" aria-hidden="true">&#8212; &middot; &#8212; &middot; &#8212;</span>
+          <span class="status-pill standby" id="dashboardStatus">Standby</span>
         </div>
 
         <div class="dashboard-stage">
           <div class="dashboard-placeholder" id="dashboardPlaceholder">
-            <div>
-              <div class="placeholder-orbit" aria-hidden="true"></div>
-              <div class="placeholder-copy">
-                <h3>Ask the agent to fetch data and show the dashboard</h3>
-                <p>The rendered Prefab dashboard will appear here as soon as CosmoLog streams it.</p>
+            <div class="dashboard-placeholder-inner">
+              <div class="solar-system" aria-hidden="true">
+                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#6ea8ff" stop-opacity="0.35"/>
+                      <stop offset="100%" stop-color="#05060d" stop-opacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="brandGrad2" x1="84" y1="84" x2="116" y2="116">
+                      <stop stop-color="#6ea8ff"/>
+                      <stop offset="1" stop-color="#b785ff"/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="100" cy="100" r="90" fill="url(#sunGlow)"/>
+                  <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(110,168,255,0.2)" stroke-width="0.8" stroke-dasharray="3 5"/>
+                  <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(183,133,255,0.15)" stroke-width="0.8" stroke-dasharray="3 5"/>
+                  <circle cx="100" cy="100" r="16" fill="url(#brandGrad2)"/>
+                  <g style="transform-origin: 100px 100px; animation: orbitDash1 8s linear infinite;">
+                    <circle cx="160" cy="100" r="5" fill="#5af2c7"/>
+                  </g>
+                  <g style="transform-origin: 100px 100px; animation: orbitDash2 12s linear infinite;">
+                    <circle cx="185" cy="100" r="4" fill="#6ea8ff"/>
+                  </g>
+                  <g style="transform-origin: 100px 100px; animation: orbitDash3 15s linear infinite;">
+                    <circle cx="185" cy="100" r="3.5" fill="#b785ff"/>
+                  </g>
+                </svg>
               </div>
+              <div>
+                <h3 class="dashboard-hero-title">Your <span class="highlight">dashboard</span> renders the moment data arrives.</h3>
+                <p class="dashboard-hero-sub">The agent streams a live Prefab UI dashboard here as soon as it fetches NASA data.</p>
+              </div>
+              <div class="kbd-hint">Try <kbd id="kbdKey">&#8984;K</kbd> to focus chat</div>
             </div>
           </div>
 
@@ -838,13 +1342,37 @@
         </div>
       </section>
     </main>
+
+    <footer class="status-bar" aria-label="Status bar">
+      <div class="sb-zone">
+        <div class="sb-dot"></div>
+        <span class="sb-label">Agent</span> <span class="sb-value">v2.4.1</span>
+        <span class="sb-sep">|</span>
+        <span class="sb-label">Model</span> <span class="sb-value" id="sbModel">gemini-2.0-flash</span>
+        <span class="sb-sep">|</span>
+        <span class="sb-label">Sess</span> <span class="sb-value" id="sbSession">----</span>
+      </div>
+      <div class="sb-zone sb-center">
+        <div class="signal-bars" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <span id="sbConnection">Connected &middot; listening for transmissions</span>
+      </div>
+      <div class="sb-zone">
+        <span class="sb-label">Events</span> <span class="sb-value" id="sbEvents">0</span>
+        <span class="sb-sep">|</span>
+        <span class="sb-label">Tools</span> <span class="sb-value" id="sbTools">0 / 3</span>
+        <span class="sb-sep">|</span>
+        <span class="sb-label">Secure</span> <span class="sb-green">TLS 1.3</span>
+      </div>
+    </footer>
   </div>
 
   <script>
+    /* ── DOM references ────────────────────── */
     const chatForm = document.querySelector("#chatForm");
     const messageInput = document.querySelector("#messageInput");
     const sendButton = document.querySelector("#sendButton");
     const resetButton = document.querySelector("#resetButton");
+    const runButton = document.querySelector("#runButton");
     const messages = document.querySelector("#messages");
     const emptyChat = document.querySelector("#emptyChat");
     const typingRow = document.querySelector("#typingRow");
@@ -855,15 +1383,45 @@
     const dashboardLoading = document.querySelector("#dashboardLoading");
     const dashboardFrame = document.querySelector("#dashboardFrame");
 
+    // Telemetry
+    const telemUtc = document.querySelector("#telemUtc");
+    const telemLatency = document.querySelector("#telemLatency");
+    const telemTokens = document.querySelector("#telemTokens");
+
+    // Status bar
+    const sbSession = document.querySelector("#sbSession");
+    const sbEvents = document.querySelector("#sbEvents");
+    const sbTools = document.querySelector("#sbTools");
+
+    /* ── State ─────────────────────────────── */
     let isProcessing = false;
     let hasMessages = false;
     let latestToolCard = null;
+    let eventCount = 0;
+    let toolCallCount = 0;
+    let requestStartTime = 0;
 
+    /* ── Init: session ID + clock + kbd hint ─ */
+    const sessionId = Math.floor(Math.random() * 0xFFFF).toString(16).padStart(4, "0");
+    sbSession.textContent = sessionId;
+
+    if (!/Mac|iPod|iPhone|iPad/.test(navigator.platform || "")) {
+      document.querySelector("#kbdKey").textContent = "Ctrl+K";
+    }
+
+    function updateUtcClock() {
+      telemUtc.textContent = new Date().toISOString().slice(11, 19);
+    }
+    updateUtcClock();
+    setInterval(updateUtcClock, 1000);
+
+    /* ── UI helpers ────────────────────────── */
     function setProcessing(processing) {
       isProcessing = processing;
       messageInput.disabled = processing;
       sendButton.disabled = processing;
       resetButton.disabled = processing;
+      runButton.disabled = processing;
       chatStatus.textContent = processing ? "Running" : "Ready";
       typingRow.classList.toggle("visible", processing);
       typingRow.setAttribute("aria-hidden", processing ? "false" : "true");
@@ -887,23 +1445,38 @@
       }
     }
 
-    function textFromPayload(payload, fallback = "") {
+    function textFromPayload(payload, fallback) {
       if (!payload || typeof payload !== "object") {
-        return fallback;
+        return fallback || "";
       }
-      return payload.text || payload.message || fallback;
+      return payload.text || payload.message || fallback || "";
     }
 
+    function updateDashboardStatus(state) {
+      dashboardStatus.textContent = state;
+      dashboardStatus.className = "status-pill";
+      if (state === "Standby") dashboardStatus.classList.add("standby");
+      else if (state === "Rendering") dashboardStatus.classList.add("rendering");
+    }
+
+    function incrementEvents() {
+      eventCount++;
+      sbEvents.textContent = eventCount;
+    }
+
+    function incrementTools() {
+      toolCallCount++;
+      sbTools.textContent = toolCallCount + " / 3";
+    }
+
+    /* ── Message rendering ─────────────────── */
     function addMessage(role, text) {
       setHasMessages(true);
-
       const row = document.createElement("div");
-      row.className = `message-row ${role}`;
-
+      row.className = "message-row " + role;
       const bubble = document.createElement("div");
       bubble.className = "message-bubble";
       bubble.textContent = text;
-
       row.appendChild(bubble);
       messages.appendChild(row);
       scrollMessages();
@@ -911,38 +1484,53 @@
 
     function addThinking(text) {
       setHasMessages(true);
-
       const card = document.createElement("div");
       card.className = "event-card thinking";
-      card.innerHTML = `
-        <details>
-          <summary><span>Thinking</span></summary>
-          <div class="event-body"></div>
-        </details>
-      `;
-      card.querySelector(".event-body").textContent = text;
+
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      const summarySpan = document.createElement("span");
+      summarySpan.textContent = "Thinking";
+      summary.appendChild(summarySpan);
+      details.appendChild(summary);
+
+      const body = document.createElement("div");
+      body.className = "event-body";
+      body.textContent = text;
+      details.appendChild(body);
+
+      card.appendChild(details);
       messages.appendChild(card);
       scrollMessages();
     }
 
     function addToolCall(name, args) {
       setHasMessages(true);
-
       const card = document.createElement("div");
       card.className = "event-card tool";
       card.dataset.toolName = name;
-      card.innerHTML = `
-        <details open>
-          <summary><span></span></summary>
-          <div class="event-body">
-            <pre></pre>
-            <div class="tool-result"></div>
-          </div>
-        </details>
-      `;
 
-      card.querySelector("summary span").textContent = `Tool call: ${name}`;
-      card.querySelector("pre").textContent = formatJson(args || {});
+      const details = document.createElement("details");
+      details.open = true;
+
+      const summary = document.createElement("summary");
+      const summarySpan = document.createElement("span");
+      summarySpan.textContent = "Tool call: " + name;
+      summary.appendChild(summarySpan);
+      details.appendChild(summary);
+
+      const body = document.createElement("div");
+      body.className = "event-body";
+      const pre = document.createElement("pre");
+      pre.textContent = formatJson(args || {});
+      body.appendChild(pre);
+
+      const resultDiv = document.createElement("div");
+      resultDiv.className = "tool-result";
+      body.appendChild(resultDiv);
+
+      details.appendChild(body);
+      card.appendChild(details);
       messages.appendChild(card);
       latestToolCard = card;
 
@@ -950,32 +1538,42 @@
         showDashboardLoading();
       }
 
+      incrementTools();
       scrollMessages();
     }
 
     function addToolResult(name, result) {
       const target = latestToolCard && latestToolCard.dataset.toolName === name
         ? latestToolCard
-        : [...messages.querySelectorAll(".event-card.tool")].reverse().find((card) => card.dataset.toolName === name);
+        : [...messages.querySelectorAll(".event-card.tool")].reverse().find(function(card) { return card.dataset.toolName === name; });
 
       if (!target) {
-        addMessage("agent", `Tool result from ${name}: ${formatJson(result)}`);
+        addMessage("agent", "Tool result from " + name + ": " + formatJson(result));
         return;
       }
 
       const resultHost = target.querySelector(".tool-result");
-      resultHost.innerHTML = `
-        <details>
-          <summary><span>Tool result</span></summary>
-          <pre></pre>
-        </details>
-      `;
-      resultHost.querySelector("pre").textContent = formatJson(result);
+      // Clear previous content
+      resultHost.textContent = "";
+
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      const summarySpan = document.createElement("span");
+      summarySpan.textContent = "Tool result";
+      summary.appendChild(summarySpan);
+      details.appendChild(summary);
+
+      const pre = document.createElement("pre");
+      pre.textContent = formatJson(result);
+      details.appendChild(pre);
+
+      resultHost.appendChild(details);
       scrollMessages();
     }
 
+    /* ── Dashboard state ───────────────────── */
     function showDashboardLoading() {
-      dashboardStatus.textContent = "Rendering";
+      updateDashboardStatus("Rendering");
       dashboardPlaceholder.classList.add("hidden");
       dashboardLoading.classList.add("visible");
       dashboardFrame.classList.remove("visible");
@@ -988,7 +1586,7 @@
       dashboardLoading.classList.remove("visible");
       dashboardLoading.setAttribute("aria-hidden", "true");
       dashboardFrame.classList.add("visible");
-      dashboardStatus.textContent = "Live";
+      updateDashboardStatus("Live");
     }
 
     function resetDashboard() {
@@ -997,33 +1595,37 @@
       dashboardLoading.classList.remove("visible");
       dashboardLoading.setAttribute("aria-hidden", "true");
       dashboardPlaceholder.classList.remove("hidden");
-      dashboardStatus.textContent = "Waiting";
+      updateDashboardStatus("Standby");
     }
 
+    /* ── SSE parsing ───────────────────────── */
     function parseSseBlock(block) {
-      const event = { event: "message", data: "" };
-      const data = [];
-
-      for (const line of block.split("\n")) {
-        if (!line || line.startsWith(":")) {
-          continue;
-        }
-
-        if (line.startsWith("event:")) {
+      var event = { event: "message", data: "" };
+      var dataLines = [];
+      var lines = block.split("\n");
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line || line.charAt(0) === ":") continue;
+        if (line.indexOf("event:") === 0) {
           event.event = line.slice(6).trim();
-        } else if (line.startsWith("data:")) {
-          data.push(line.slice(5).trimStart());
+        } else if (line.indexOf("data:") === 0) {
+          dataLines.push(line.slice(5).trimStart());
         }
       }
-
-      event.data = data.join("\n");
+      event.data = dataLines.join("\n");
       return event;
     }
 
     function handleEvent(eventType, payload) {
+      incrementEvents();
+
       switch (eventType) {
         case "start":
           setProcessing(true);
+          if (requestStartTime > 0) {
+            var latency = Math.round(performance.now() - requestStartTime);
+            telemLatency.textContent = latency + " ms";
+          }
           break;
         case "thinking":
           addThinking(textFromPayload(payload, "Planning the next step..."));
@@ -1047,7 +1649,7 @@
           if (!dashboardFrame.classList.contains("visible")) {
             dashboardPlaceholder.classList.remove("hidden");
           }
-          dashboardStatus.textContent = dashboardFrame.classList.contains("visible") ? "Live" : "Waiting";
+          updateDashboardStatus(dashboardFrame.classList.contains("visible") ? "Live" : "Standby");
           break;
         case "done":
           setProcessing(false);
@@ -1058,48 +1660,46 @@
       }
     }
 
+    /* ── Send / reset ──────────────────────── */
     async function sendMessage(message) {
-      const trimmed = message.trim();
-      if (!trimmed || isProcessing) {
-        return;
-      }
+      var trimmed = message.trim();
+      if (!trimmed || isProcessing) return;
 
       addMessage("user", trimmed);
       messageInput.value = "";
       latestToolCard = null;
       setProcessing(true);
+      requestStartTime = performance.now();
 
       try {
-        const response = await fetch("/chat", {
+        var response = await fetch("/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: trimmed }),
         });
 
         if (!response.ok || !response.body) {
-          throw new Error(`Request failed with status ${response.status}`);
+          throw new Error("Request failed with status " + response.status);
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
+        var reader = response.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = "";
 
         while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            break;
-          }
+          var chunk = await reader.read();
+          if (chunk.done) break;
 
-          buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
-          let boundary = buffer.indexOf("\n\n");
+          buffer += decoder.decode(chunk.value, { stream: true }).replace(/\r\n/g, "\n");
+          var boundary = buffer.indexOf("\n\n");
 
           while (boundary !== -1) {
-            const block = buffer.slice(0, boundary);
+            var block = buffer.slice(0, boundary);
             buffer = buffer.slice(boundary + 2);
 
             if (block.trim()) {
-              const parsed = parseSseBlock(block);
-              let payload = {};
+              var parsed = parseSseBlock(block);
+              var payload = {};
               if (parsed.data) {
                 payload = JSON.parse(parsed.data);
               }
@@ -1110,13 +1710,11 @@
           }
         }
 
-        const trailing = decoder.decode();
-        if (trailing) {
-          buffer += trailing.replace(/\r\n/g, "\n");
-        }
+        var trailing = decoder.decode();
+        if (trailing) buffer += trailing.replace(/\r\n/g, "\n");
         if (buffer.trim()) {
-          const parsed = parseSseBlock(buffer);
-          handleEvent(parsed.event, parsed.data ? JSON.parse(parsed.data) : {});
+          var parsedFinal = parseSseBlock(buffer);
+          handleEvent(parsedFinal.event, parsedFinal.data ? JSON.parse(parsedFinal.data) : {});
         }
       } catch (error) {
         addMessage("error", error instanceof Error ? error.message : String(error));
@@ -1124,46 +1722,60 @@
         dashboardLoading.setAttribute("aria-hidden", "true");
         if (!dashboardFrame.classList.contains("visible")) {
           dashboardPlaceholder.classList.remove("hidden");
-          dashboardStatus.textContent = "Waiting";
+          updateDashboardStatus("Standby");
         }
         setProcessing(false);
       }
     }
 
     async function resetChat() {
-      if (isProcessing) {
-        return;
-      }
-
+      if (isProcessing) return;
       resetButton.disabled = true;
       try {
         await fetch("/reset", { method: "POST" });
       } catch (error) {
         addMessage("error", error instanceof Error ? error.message : String(error));
       } finally {
-        messages.innerHTML = "";
+        messages.textContent = "";
         messages.appendChild(emptyChat);
         setHasMessages(false);
         latestToolCard = null;
+        eventCount = 0;
+        toolCallCount = 0;
+        sbEvents.textContent = "0";
+        sbTools.textContent = "0 / 3";
+        telemLatency.textContent = "-- ms";
+        telemTokens.textContent = "0 / 8K";
         resetDashboard();
         setProcessing(false);
       }
     }
 
-    chatForm.addEventListener("submit", (event) => {
+    /* ── Event listeners ───────────────────── */
+    chatForm.addEventListener("submit", function(event) {
       event.preventDefault();
       sendMessage(messageInput.value);
     });
 
-    suggestedPrompts.addEventListener("click", (event) => {
-      const button = event.target.closest("button");
-      if (!button) {
-        return;
-      }
-      sendMessage(button.textContent);
+    suggestedPrompts.addEventListener("click", function(event) {
+      var button = event.target.closest("button");
+      if (!button) return;
+      sendMessage(button.dataset.prompt || button.textContent);
     });
 
     resetButton.addEventListener("click", resetChat);
+
+    runButton.addEventListener("click", function() {
+      sendMessage("Fetch today's APOD and Mars rover photos, save them to my journal, and show the full dashboard");
+    });
+
+    // Cmd+K / Ctrl+K to focus chat input
+    document.addEventListener("keydown", function(event) {
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+        event.preventDefault();
+        messageInput.focus();
+      }
+    });
 
     setHasMessages(false);
   </script>
