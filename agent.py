@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import AsyncGenerator, Callable
 from typing import Any
 
 from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_validator
+from sse_starlette.sse import EventSourceResponse
 
 from agent_prompt import SYSTEM_PROMPT
 from mcp_server import fetch_space_data, manage_space_journal, show_space_dashboard
@@ -24,6 +29,24 @@ MODEL = os.environ.get("GEMINI_MODEL", "gemini-3-flash-preview")
 MAX_ITERATIONS = 10
 
 _gemini_client: genai.Client | None = None
+
+app = FastAPI(title="CosmoLog AI Agent")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+conversation_history: list[types.Content] = []
+
+
+class ChatRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    message: str
+
+    @field_validator("message")
+    @classmethod
+    def message_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("message must not be blank")
+        return value
 
 
 def _object_schema(
@@ -262,3 +285,45 @@ async def agent_loop(
         yield {"type": "error", "data": {"message": str(exc)}}
     finally:
         yield {"type": "done", "data": {}}
+
+
+async def _sse_event_stream(
+    message: str,
+) -> AsyncGenerator[dict[str, str], None]:
+    try:
+        async for event in agent_loop(message, conversation_history):
+            event_type = event["type"]
+            data = event.get("data", {})
+            yield {"event": event_type, "data": json.dumps(data)}
+    except Exception as exc:
+        yield {"event": "error", "data": json.dumps({"message": str(exc)})}
+        yield {"event": "done", "data": json.dumps({})}
+
+
+@app.get("/")
+async def root() -> FileResponse:
+    return FileResponse("static/index.html")
+
+
+@app.post("/chat")
+async def chat(request: ChatRequest) -> EventSourceResponse:
+    return EventSourceResponse(_sse_event_stream(request.message))
+
+
+@app.post("/reset")
+async def reset() -> dict[str, str]:
+    conversation_history.clear()
+    return {"status": "ok"}
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "healthy"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)
