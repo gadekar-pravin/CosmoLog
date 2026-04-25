@@ -119,6 +119,37 @@ FUNCTION_DECLARATIONS: list[types.FunctionDeclaration] = [
                 "payload": types.Schema(
                     type=types.Type.OBJECT,
                     description="Required for create and update. Entry data dictionary.",
+                    properties={
+                        "type": types.Schema(
+                            type=types.Type.STRING,
+                            description=(
+                                "Entry type, required for create"
+                                " (e.g. 'observation', 'apod', 'rover_photo')."
+                            ),
+                        ),
+                        "date": types.Schema(
+                            type=types.Type.STRING,
+                            description="Entry date in YYYY-MM-DD format, required for create.",
+                        ),
+                        "title": types.Schema(
+                            type=types.Type.STRING,
+                            description="Title of the journal entry.",
+                        ),
+                        "tags": types.Schema(
+                            type=types.Type.ARRAY,
+                            items=types.Schema(type=types.Type.STRING),
+                            description="Tags for categorizing the entry.",
+                        ),
+                        "notes": types.Schema(
+                            type=types.Type.STRING,
+                            description="Free-text notes for the entry.",
+                        ),
+                        "source_url": types.Schema(
+                            type=types.Type.STRING,
+                            description="URL of the source data (e.g. APOD image URL).",
+                        ),
+                    },
+                    required=["type", "date"],
                 ),
                 "tag_filter": types.Schema(
                     type=types.Type.STRING,

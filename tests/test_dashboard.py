@@ -70,6 +70,7 @@ SAMPLE_JOURNAL_ENTRIES = [
         "title": "Test Nebula",
         "date": "2026-04-25",
         "tags": ["mars-week"],
+        "content": "Observed a stunning nebula formation today.",
         "notes": "Test note",
         "source_url": "https://apod.nasa.gov/image.jpg",
         "created_at": "2026-04-25T10:30:00+00:00",
@@ -162,3 +163,46 @@ def test_build_dashboard_hazardous_badges():
 
     assert "Hazardous" in tree_str
     assert "Safe" in tree_str
+
+
+def test_journal_uses_accordion():
+    result = build_dashboard(journal_entries=SAMPLE_JOURNAL_ENTRIES)
+    tree = result.to_json()
+
+    accordions = find_components(tree, "Accordion")
+    accordion_items = find_components(tree, "AccordionItem")
+
+    assert len(accordions) == 1
+    assert len(accordion_items) == 1
+    assert accordion_items[0]["title"] == "Test Nebula"
+
+
+def test_journal_shows_content_field():
+    entries_with_content = [
+        {
+            "id": "obs-1",
+            "type": "observation",
+            "title": "Orion Sighting",
+            "date": "2026-04-25",
+            "content": "Clear skies revealed Orion tonight.",
+        }
+    ]
+    result = build_dashboard(journal_entries=entries_with_content)
+    tree = result.to_json()
+
+    markdowns = find_components(tree, "Markdown")
+    assert len(markdowns) >= 1
+    assert any("Clear skies" in md.get("content", "") for md in markdowns)
+
+
+def test_journal_entry_type_visuals():
+    result = build_dashboard(journal_entries=SAMPLE_JOURNAL_ENTRIES)
+    tree = result.to_json()
+
+    icons = find_components(tree, "Icon")
+    dots = find_components(tree, "Dot")
+
+    icon_names = [icon.get("name") for icon in icons]
+    assert "sun" in icon_names
+    assert len(dots) >= 1
+    assert any(dot.get("variant") == "warning" for dot in dots)

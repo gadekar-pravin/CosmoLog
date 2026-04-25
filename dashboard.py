@@ -9,6 +9,8 @@ from prefab_ui.app import PrefabApp
 from prefab_ui.components import (
     H2,
     H3,
+    Accordion,
+    AccordionItem,
     Badge,
     Button,
     Card,
@@ -18,14 +20,18 @@ from prefab_ui.components import (
     CardHeader,
     CardTitle,
     Column,
+    Dot,
     Embed,
     Grid,
+    Icon,
     Image,
     Link,
+    Markdown,
     Metric,
     Muted,
     Row,
     Separator,
+    Small,
     Table,
     TableBody,
     TableCell,
@@ -33,10 +39,23 @@ from prefab_ui.components import (
     TableHeader,
     TableRow,
     Text,
+    Tooltip,
 )
 from prefab_ui.rx import ERROR
 
 logger = logging.getLogger(__name__)
+
+_ENTRY_TYPE_MAP: dict[str, tuple[str, str]] = {
+    "observation": ("telescope", "info"),
+    "apod": ("sun", "warning"),
+    "rover_photo": ("camera", "success"),
+}
+_FALLBACK_VISUALS = ("notebook-pen", "muted")
+
+
+def _entry_visuals(entry_type: str) -> tuple[str, str]:
+    """Return (icon_name, dot_variant) for a journal entry type."""
+    return _ENTRY_TYPE_MAP.get(entry_type, _FALLBACK_VISUALS)
 
 
 def build_dashboard(
@@ -181,74 +200,85 @@ def _build_journal_section(entries: list[dict[str, Any]]) -> None:
     with Card():
         with CardHeader():
             with Row(gap=2, align="center"):
-                H3("Space Journal")
+                Icon("book-open")
+                H3("Mission Log")
                 Badge(str(len(entries)), variant="secondary")
 
         with CardContent():
             if not entries:
-                Muted("No journal entries yet. Fetch data and save some!")
+                with Column(gap=2, align="center", css_class="py-4"):
+                    Icon("file-question", size="lg")
+                    Muted("No journal entries yet. Fetch data and save some!")
                 return
 
-            with Column(gap=3):
+            with Accordion(multiple=True, default_open_items=0):
                 for entry in entries:
                     _build_journal_entry(entry)
 
 
 def _build_journal_entry(entry: dict[str, Any]) -> None:
     entry_id = entry.get("id", "")
+    entry_type = entry.get("type", "entry")
+    icon_name, dot_variant = _entry_visuals(entry_type)
+    content = entry.get("content") or entry.get("notes", "")
 
-    with Card():
-        with CardHeader():
+    with AccordionItem(entry.get("title", "Untitled entry"), value=entry_id or None):
+        with Column(gap=3):
             with Row(align="center", justify="between"):
                 with Row(gap=2, align="center"):
-                    CardTitle(entry.get("title", "Untitled entry"))
-                    Badge(entry.get("type", "entry"), variant="info")
+                    Dot(variant=dot_variant)
+                    Icon(icon_name, size="sm")
+                    Badge(entry_type, variant="info")
+                    Small(entry.get("date", "N/A"))
                 with Row(gap=1):
-                    Button(
-                        "Edit",
-                        icon="pencil",
-                        size="icon-xs",
-                        variant="ghost",
-                        on_click=SendMessage(
-                            f"Update journal entry '{entry_id}' -- ask me what to change"
-                        ),
-                    )
-                    Button(
-                        "Delete",
-                        icon="trash-2",
-                        size="icon-xs",
-                        variant="ghost",
-                        on_click=CallTool(
-                            "manage_space_journal",
-                            arguments={
-                                "operation": "delete",
-                                "entry_id": entry_id,
-                            },
-                            on_success=ShowToast(
-                                "Entry deleted",
-                                variant="success",
+                    with Tooltip("Edit this entry"):
+                        Button(
+                            "Edit",
+                            icon="pencil",
+                            size="icon-xs",
+                            variant="ghost",
+                            on_click=SendMessage(
+                                f"Update journal entry '{entry_id}' -- ask me what to change"
                             ),
-                            on_error=ShowToast(
-                                ERROR,
-                                variant="error",
+                        )
+                    with Tooltip("Delete this entry"):
+                        Button(
+                            "Delete",
+                            icon="trash-2",
+                            size="icon-xs",
+                            variant="ghost",
+                            on_click=CallTool(
+                                "manage_space_journal",
+                                arguments={
+                                    "operation": "delete",
+                                    "entry_id": entry_id,
+                                },
+                                on_success=ShowToast(
+                                    "Entry deleted",
+                                    variant="success",
+                                ),
+                                on_error=ShowToast(
+                                    ERROR,
+                                    variant="error",
+                                ),
                             ),
-                        ),
-                    )
-        with CardContent():
-            if entry.get("notes"):
-                Text(entry["notes"])
+                        )
+            if content:
+                Markdown(content, css_class="text-sm")
             if entry.get("tags"):
-                with Row(gap=1):
+                Separator()
+                with Row(gap=1, css_class="flex-wrap"):
                     for tag in entry["tags"]:
-                        Badge(tag, variant="outline")
+                        Badge(tag, variant="secondary")
             if entry.get("source_url"):
                 Link("Source", href=entry["source_url"], css_class="text-xs")
-            Muted(entry.get("date", "N/A"))
             if entry.get("created_at"):
-                timestamp = f"Created: {entry['created_at']}"
+                timestamp = entry["created_at"][:16]
                 if entry.get("updated_at") and entry["updated_at"] != entry["created_at"]:
-                    timestamp += f" - Updated: {entry['updated_at']}"
-                Muted(timestamp, css_class="text-xs")
+                    timestamp += f" (edited {entry['updated_at'][:16]})"
+                with Row(gap=1, align="center"):
+                    Icon("clock", size="sm")
+                    Small(timestamp)
 
 
 def _build_neo_section(neos: list[dict[str, Any]]) -> None:

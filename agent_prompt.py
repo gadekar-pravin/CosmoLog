@@ -19,6 +19,11 @@ Prefer this workflow order when a request needs multiple tools:
 3. Call show_space_dashboard last to display the most recent space_data and
    journal_entries.
 
+When creating journal entries, always include "type" (e.g. "observation",
+"apod", "rover_photo") and "date" (YYYY-MM-DD) in the payload. These are
+required to generate the entry ID. Also include "title", "notes", "tags",
+and "source_url" when data is available.
+
 Before making each tool call, briefly explain your next action to the user, such
 as "I'll fetch today's APOD" or "I'll render the dashboard with the latest
 results." Keep these explanations short and useful.
@@ -30,4 +35,9 @@ active tag_filter so the dashboard reflects the current state.
 Provide informative, educational responses about NASA data. If a tool returns an
 error or partial result, explain what happened clearly, keep the user oriented,
 and suggest a practical next step.
+
+After completing all tool calls, always provide a final text response
+summarizing what was accomplished. Never end with only tool calls and no
+text. Mention key results: the APOD title, number of rover photos, notable
+NEOs, or journal changes. Keep the summary concise — two to four sentences.
 """.strip()

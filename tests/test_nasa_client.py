@@ -3,6 +3,7 @@ from __future__ import annotations
 import respx
 from httpx import ConnectError, Response
 
+import nasa_client as nc
 from models import SpaceData
 from nasa_client import NASAClient
 
@@ -271,7 +272,6 @@ def test_cache_expiry(
     monkeypatch, sample_apod_response, sample_rover_response, sample_neo_response
 ):
     """Advance time past TTL (300s), verify cache miss triggers new request."""
-    import nasa_client as nc
 
     apod_route = respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
     respx.get(ROVER_LATEST_URL).mock(
@@ -304,3 +304,42 @@ def test_partial_failure(sample_apod_response):
     assert result.rover_photos == []
     assert len(result.errors) >= 1
     assert "Mars Rover Photos returned HTTP 500" in result.errors
+
+
+@respx.mock
+def test_rover_404_negative_caching(sample_apod_response, sample_neo_response):
+    """Rover 404 is cached: second fetch_all skips HTTP, returns no rover error."""
+    respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
+    rover_route = respx.get(ROVER_LATEST_URL).mock(return_value=Response(404))
+    respx.get(NEO_URL).mock(return_value=Response(200, json=sample_neo_response))
+
+    client = NASAClient(api_key="TEST_KEY")
+    result1 = client.fetch_all()
+
+    assert rover_route.call_count == 1
+    assert any("404" in e for e in result1.errors)
+
+    result2 = client.fetch_all()
+
+    assert rover_route.call_count == 1
+    assert result2.rover_photos == []
+    assert not any("Rover" in e for e in result2.errors)
+
+
+@respx.mock
+def test_rover_negative_cache_expiry(monkeypatch, sample_apod_response, sample_neo_response):
+    """After NEGATIVE_CACHE_TTL_SECONDS, rover 404 is retried."""
+    respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
+    rover_route = respx.get(ROVER_LATEST_URL).mock(return_value=Response(404))
+    respx.get(NEO_URL).mock(return_value=Response(200, json=sample_neo_response))
+
+    monkeypatch.setattr(nc.time, "time", lambda: 1000.0)
+    client = NASAClient(api_key="TEST_KEY")
+    client.fetch_all()
+
+    assert rover_route.call_count == 1
+
+    monkeypatch.setattr(nc.time, "time", lambda: 1000.0 + nc.NEGATIVE_CACHE_TTL_SECONDS + 1)
+    client.fetch_all()
+
+    assert rover_route.call_count == 2

@@ -289,3 +289,14 @@ async def test_agent_loop_max_iterations(monkeypatch):
     ]
     assert len(models.calls) == 2
     assert "maximum reasoning limit" in events[-2]["data"]["text"]
+
+
+def test_journal_payload_schema_has_required_fields():
+    """Verify payload property in manage_space_journal has type and date as required."""
+    journal_decl = next(d for d in agent.FUNCTION_DECLARATIONS if d.name == "manage_space_journal")
+    payload_schema = journal_decl.parameters.properties["payload"]
+
+    assert "type" in payload_schema.properties
+    assert "date" in payload_schema.properties
+    assert "type" in payload_schema.required
+    assert "date" in payload_schema.required

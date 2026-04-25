@@ -12,6 +12,7 @@ from models import APODData, NearEarthObject, RoverPhoto, SpaceData
 logger = logging.getLogger(__name__)
 
 CACHE_TTL_SECONDS = 300
+NEGATIVE_CACHE_TTL_SECONDS = 60
 
 APOD_URL = "https://api.nasa.gov/planetary/apod"
 MARS_BASE_URL = "https://api.nasa.gov/mars-photos/api/v1/rovers"
@@ -24,12 +25,12 @@ class NASAClient:
     def __init__(self, api_key: str = "DEMO_KEY") -> None:
         self.api_key = api_key
         self.client = httpx.Client(timeout=30.0)
-        self._cache: dict[str, tuple[float, object]] = {}
+        self._cache: dict[str, tuple[float, int, object]] = {}
 
     def _get_cached(self, key: str) -> object | None:
         if key in self._cache:
-            timestamp, value = self._cache[key]
-            if time.time() - timestamp < CACHE_TTL_SECONDS:
+            timestamp, ttl, value = self._cache[key]
+            if time.time() - timestamp < ttl:
                 logger.debug("cache_hit key=%s", key)
                 return value
             logger.debug("cache_expired key=%s", key)
@@ -38,9 +39,9 @@ class NASAClient:
             logger.debug("cache_miss key=%s", key)
         return None
 
-    def _set_cached(self, key: str, value: object) -> None:
-        self._cache[key] = (time.time(), value)
-        logger.debug("cache_set key=%s", key)
+    def _set_cached(self, key: str, value: object, ttl: int = CACHE_TTL_SECONDS) -> None:
+        self._cache[key] = (time.time(), ttl, value)
+        logger.debug("cache_set key=%s ttl=%d", key, ttl)
 
     def _normalize_apod(self, data: dict[str, Any]) -> APODData:
         return APODData(
@@ -105,13 +106,18 @@ class NASAClient:
             return cached  # type: ignore[return-value]
 
         logger.info("fetch endpoint=rover rover=%s sol=%s count=%d", rover, sol, count)
-        photos_data: list[dict[str, Any]]
-        if sol is not None:
-            photos_data = self._request_rover_endpoint(rover, sol)
-            if not photos_data:
+        try:
+            photos_data: list[dict[str, Any]]
+            if sol is not None:
+                photos_data = self._request_rover_endpoint(rover, sol)
+                if not photos_data:
+                    photos_data = self._request_rover_latest_endpoint(rover)
+            else:
                 photos_data = self._request_rover_latest_endpoint(rover)
-        else:
-            photos_data = self._request_rover_latest_endpoint(rover)
+        except (httpx.HTTPStatusError, httpx.RequestError):
+            logger.info("rover_negative_cache rover=%s sol=%s", rover, sol)
+            self._set_cached(cache_key, [], ttl=NEGATIVE_CACHE_TTL_SECONDS)
+            raise
 
         rover_photos = [self._normalize_rover_photo(photo) for photo in photos_data[:count]]
         logger.info("fetch_done endpoint=rover photo_count=%d", len(rover_photos))
