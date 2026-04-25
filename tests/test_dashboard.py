@@ -1,9 +1,11 @@
 import json
+import re
 from typing import Any
 
 from prefab_ui.app import PrefabApp
+from prefab_ui.components import Badge, Column, Row, Text
 
-from dashboard import build_dashboard
+from dashboard import _count_components, build_dashboard
 
 IMAGE_SPACE_DATA = {
     "apod": {
@@ -206,3 +208,58 @@ def test_journal_entry_type_visuals():
     assert "sun" in icon_names
     assert len(dots) >= 1
     assert any(dot.get("variant") == "warning" for dot in dots)
+
+
+# --- Generation metadata footer tests ---
+
+
+def test_dashboard_has_generation_footer():
+    result = build_dashboard(space_data=IMAGE_SPACE_DATA, journal_entries=SAMPLE_JOURNAL_ENTRIES)
+    tree_str = json.dumps(result.to_json())
+
+    assert "Built with Prefab UI" in tree_str
+    assert "Generated" in tree_str
+    assert "components" in tree_str
+    assert "types" in tree_str
+
+
+def test_footer_badges_show_component_types():
+    result = build_dashboard(space_data=IMAGE_SPACE_DATA, journal_entries=SAMPLE_JOURNAL_ENTRIES)
+    tree = result.to_json()
+    tree_str = json.dumps(tree)
+
+    # Footer badges are outline variant — find all outline badges
+    badges = find_components(tree, "Badge")
+    outline_labels = {b["label"] for b in badges if b.get("variant") == "outline"}
+
+    # These types must appear in a fully-loaded dashboard
+    for expected in ("Card", "Badge", "Metric"):
+        assert expected in outline_labels, f"Missing outline badge for type '{expected}'"
+        assert expected in tree_str
+
+
+def test_footer_component_count_is_reasonable():
+    result = build_dashboard(space_data=IMAGE_SPACE_DATA, journal_entries=SAMPLE_JOURNAL_ENTRIES)
+    tree_str = json.dumps(result.to_json())
+
+    # The footer contains a string like "42 components · 14 types"
+    match = re.search(r"(\d+) components", tree_str)
+    assert match, "Component count not found in footer"
+    count = int(match.group(1))
+    assert count > 20, f"Expected >20 components in a full dashboard, got {count}"
+
+
+def test_count_components_helper():
+    with Column() as root:
+        Text("hello")
+        with Row():
+            Badge("a", variant="outline")
+            Badge("b", variant="outline")
+
+    total, type_counts = _count_components(root)
+
+    assert total == 5  # Column + Text + Row + 2×Badge
+    assert type_counts["Column"] == 1
+    assert type_counts["Row"] == 1
+    assert type_counts["Text"] == 1
+    assert type_counts["Badge"] == 2

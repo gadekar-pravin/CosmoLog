@@ -100,6 +100,10 @@ def build_dashboard(
         _build_neo_section(neos)
         _build_refresh_section()
 
+        # Generation metadata footer — count before adding footer components
+        total, type_counts = _count_components(view)
+        _build_footer_section(total, type_counts)
+
     logger.debug("build_dashboard_done")
     return PrefabApp(
         title="CosmoLog",
@@ -324,3 +328,40 @@ def _build_refresh_section() -> None:
             variant="outline",
             on_click=SendMessage("Read the journal entries and refresh the space dashboard"),
         )
+
+
+def _count_components(root: Any) -> tuple[int, dict[str, int]]:
+    """Walk the in-memory Prefab component tree and return (total, {type: count})."""
+    from collections import Counter
+
+    from prefab_ui.components.base import Component, ContainerComponent
+
+    counts: Counter[str] = Counter()
+
+    def _walk(node: Component) -> None:
+        counts[node.type] += 1
+        if isinstance(node, ContainerComponent):
+            for child in node.children:
+                _walk(child)
+
+    _walk(root)
+    return sum(counts.values()), dict(counts)
+
+
+def _build_footer_section(total_count: int, type_counts: dict[str, int]) -> None:
+    """Render a generation metadata footer proving dynamic construction."""
+    from datetime import UTC, datetime
+
+    sorted_types = sorted(type_counts)
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    Separator()
+    with Column(gap=3, align="center", css_class="py-4 opacity-75"):
+        with Row(gap=2, align="center"):
+            Dot(variant="success", size="sm")
+            Small("Built with Prefab UI")
+        Muted(f"Generated {timestamp}")
+        Muted(f"{total_count} components \u00b7 {len(sorted_types)} types")
+        with Row(gap=1, css_class="flex-wrap", justify="center"):
+            for type_name in sorted_types:
+                Badge(type_name, variant="outline")
