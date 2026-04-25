@@ -9,6 +9,10 @@ dependencies = [
     "httpx",
     "python-dotenv",
     "pydantic>=2.13.3",
+    "google-genai>=1.73.1",
+    "fastapi>=0.136.1",
+    "uvicorn>=0.46.0",
+    "sse-starlette>=3.3.4",
 ]
 
 [dependency-groups]

@@ -20,6 +20,24 @@ dashboard.py     — Prefab UI dashboard builder (imported lazily from show_spac
 - Entry point script: `cosmolog` (defined in `[project.scripts]`)
 - Journal and dashboard modules are lazily imported inside tool functions
 
+## Agent Architecture
+
+The planned Gemini agent web app layers a conversational UI over the existing MCP
+tools without changing the MCP server contract.
+
+```
+agent.py          — FastAPI app, Gemini client, tool dispatch, SSE agent loop
+agent_prompt.py   — Gemini system prompt (`SYSTEM_PROMPT`)
+static/index.html — browser chat UI and live dashboard iframe
+```
+
+- MCP tools are imported in-process from `mcp_server.py`, not called over MCP transport
+- `TOOL_REGISTRY` maps Gemini function names to `fetch_space_data`, `manage_space_journal`, and `show_space_dashboard`
+- `agent_loop()` is an async generator that yields SSE event dictionaries while Gemini reasons, calls tools, and produces text
+- SSE event types: `start`, `thinking`, `tool_call`, `tool_result`, `dashboard`, `text`, `error`, `done`
+- `show_space_dashboard` returns a `PrefabApp`; agent dispatch must call `.html()` and stream the HTML as a `dashboard` event
+- Dashboard HTML is sent to the browser iframe, while Gemini receives only a short summary to avoid bloating conversation context
+
 ## Prefab UI Reference
 
 The Prefab framework source is at `../prefab/`. When unsure about a component API, check the actual source:
@@ -45,6 +63,7 @@ These are easy to get wrong — follow exactly:
 uv sync                        # install deps
 uv run pytest                  # run tests
 uv run python mcp_server.py    # start MCP server
+uv run python agent.py         # start agent web app
 uv run ruff check .            # lint
 uv run ruff format .           # format
 ```
