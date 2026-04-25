@@ -93,6 +93,10 @@ FUNCTION_DECLARATIONS: list[types.FunctionDeclaration] = [
                     type=types.Type.INTEGER,
                     description="Number of days ahead to check for NEOs. Defaults to 7.",
                 ),
+                "neo_count": types.Schema(
+                    type=types.Type.INTEGER,
+                    description="Maximum number of NEOs to return. Defaults to 10.",
+                ),
             }
         ),
     ),
@@ -169,7 +173,7 @@ def _get_gemini_client() -> genai.Client:
 def _coerce_tool_args(name: str, args: dict[str, Any]) -> dict[str, Any]:
     coerced = dict(args)
     if name == "fetch_space_data":
-        for key in ("sol", "photo_count", "neo_days"):
+        for key in ("sol", "photo_count", "neo_days", "neo_count"):
             value = coerced.get(key)
             if isinstance(value, float) and value.is_integer():
                 coerced[key] = int(value)

@@ -113,6 +113,83 @@ def test_fetch_neo_hazardous_flag(sample_apod_response, sample_neo_response):
 
 
 @respx.mock
+def test_neo_count_sorts_and_slices(sample_apod_response):
+    """Cap NEOs: hazardous first, then by closest distance, sliced to neo_count."""
+    neo_response = {
+        "near_earth_objects": {
+            "2026-04-25": [
+                {
+                    "id": "1",
+                    "name": "Hazardous Far",
+                    "close_approach_data": [
+                        {
+                            "close_approach_date": "2026-04-25",
+                            "miss_distance": {"kilometers": "9000000"},
+                            "relative_velocity": {"kilometers_per_hour": "30000"},
+                        }
+                    ],
+                    "estimated_diameter": {
+                        "meters": {
+                            "estimated_diameter_min": 100.0,
+                            "estimated_diameter_max": 200.0,
+                        }
+                    },
+                    "is_potentially_hazardous_asteroid": True,
+                },
+                {
+                    "id": "2",
+                    "name": "Safe Close",
+                    "close_approach_data": [
+                        {
+                            "close_approach_date": "2026-04-25",
+                            "miss_distance": {"kilometers": "1000000"},
+                            "relative_velocity": {"kilometers_per_hour": "20000"},
+                        }
+                    ],
+                    "estimated_diameter": {
+                        "meters": {
+                            "estimated_diameter_min": 50.0,
+                            "estimated_diameter_max": 100.0,
+                        }
+                    },
+                    "is_potentially_hazardous_asteroid": False,
+                },
+                {
+                    "id": "3",
+                    "name": "Safe Far",
+                    "close_approach_data": [
+                        {
+                            "close_approach_date": "2026-04-25",
+                            "miss_distance": {"kilometers": "8000000"},
+                            "relative_velocity": {"kilometers_per_hour": "25000"},
+                        }
+                    ],
+                    "estimated_diameter": {
+                        "meters": {
+                            "estimated_diameter_min": 75.0,
+                            "estimated_diameter_max": 150.0,
+                        }
+                    },
+                    "is_potentially_hazardous_asteroid": False,
+                },
+            ]
+        }
+    }
+    respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
+    _mock_empty_rover()
+    respx.get(NEO_URL).mock(return_value=Response(200, json=neo_response))
+
+    client = NASAClient(api_key="TEST_KEY")
+    result = client.fetch_all(neo_count=2)
+
+    assert len(result.near_earth_objects) == 2
+    assert result.near_earth_objects[0].name == "Hazardous Far"
+    assert result.near_earth_objects[0].is_potentially_hazardous is True
+    assert result.near_earth_objects[1].name == "Safe Close"
+    assert result.near_earth_objects[1].miss_distance_km == 1_000_000.0
+
+
+@respx.mock
 def test_rate_limit_429():
     """Mock 429 response, verify error message in SpaceData.errors."""
     respx.get(APOD_URL).mock(return_value=Response(429))

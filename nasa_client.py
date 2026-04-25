@@ -134,10 +134,10 @@ class NASAClient:
         response.raise_for_status()
         return response.json()["latest_photos"]
 
-    def _fetch_neos(self, days: int) -> list[NearEarthObject]:
+    def _fetch_neos(self, days: int, count: int) -> list[NearEarthObject]:
         start_date = date.today()
         start_date_str = start_date.isoformat()
-        cache_key = f"neo:{start_date_str}:{days}"
+        cache_key = f"neo:{start_date_str}:{days}:{count}"
         cached = self._get_cached(cache_key)
         if cached is not None:
             return cached  # type: ignore[return-value]
@@ -164,6 +164,9 @@ class NASAClient:
                     logger.debug("neo_normalize_skip id=%s error=%s", neo.get("id"), exc)
                     continue
 
+        neos.sort(key=lambda n: (not n.is_potentially_hazardous, n.miss_distance_km))
+        neos = neos[:count]
+
         logger.info("fetch_done endpoint=neo neo_count=%d", len(neos))
         self._set_cached(cache_key, neos)
         return neos
@@ -175,15 +178,17 @@ class NASAClient:
         sol: int | None = None,
         photo_count: int = 3,
         neo_days: int = 7,
+        neo_count: int = 10,
     ) -> SpaceData:
         """Fetch all NASA data, collecting partial results and errors."""
         logger.info(
-            "fetch_all date=%s rover=%s sol=%s photo_count=%d neo_days=%d",
+            "fetch_all date=%s rover=%s sol=%s photo_count=%d neo_days=%d neo_count=%d",
             apod_date,
             rover,
             sol,
             photo_count,
             neo_days,
+            neo_count,
         )
         errors: list[str] = []
         apod: APODData | None = None
@@ -200,8 +205,9 @@ class NASAClient:
             TypeError,
             ValueError,
         ) as exc:
-            logger.warning("fetch_all_error api=APOD error=%s", exc)
-            errors.append(self._format_error("APOD", exc))
+            msg = self._format_error("APOD", exc)
+            logger.warning("fetch_all_error api=APOD error=%s", msg)
+            errors.append(msg)
 
         try:
             rover_photos = self._fetch_rover_photos(rover, sol, photo_count)
@@ -213,11 +219,12 @@ class NASAClient:
             TypeError,
             ValueError,
         ) as exc:
-            logger.warning("fetch_all_error api=MarsRover error=%s", exc)
-            errors.append(self._format_error("Mars Rover Photos", exc))
+            msg = self._format_error("Mars Rover Photos", exc)
+            logger.warning("fetch_all_error api=MarsRover error=%s", msg)
+            errors.append(msg)
 
         try:
-            neos = self._fetch_neos(neo_days)
+            neos = self._fetch_neos(neo_days, neo_count)
         except (
             httpx.HTTPStatusError,
             httpx.RequestError,
@@ -226,8 +233,9 @@ class NASAClient:
             TypeError,
             ValueError,
         ) as exc:
-            logger.warning("fetch_all_error api=NeoWs error=%s", exc)
-            errors.append(self._format_error("NeoWs", exc))
+            msg = self._format_error("NeoWs", exc)
+            logger.warning("fetch_all_error api=NeoWs error=%s", msg)
+            errors.append(msg)
 
         logger.info(
             "fetch_all_done apod=%s rover_count=%d neo_count=%d error_count=%d",

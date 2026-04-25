@@ -29,6 +29,7 @@ def fetch_space_data(
     sol: int | None = None,
     photo_count: int = 3,
     neo_days: int = 7,
+    neo_count: int = 10,
 ) -> dict[str, Any]:
     """Fetch live NASA space data: APOD, Mars rover photos, and near-Earth objects.
 
@@ -38,14 +39,16 @@ def fetch_space_data(
         sol: Martian sol for rover photos. Defaults to latest available.
         photo_count: Number of rover photos to return. Defaults to 3.
         neo_days: Number of days ahead to check for NEOs. Defaults to 7.
+        neo_count: Maximum number of NEOs to return. Defaults to 10.
     """
     logger.info(
-        "fetch_space_data date=%s rover=%s sol=%s photo_count=%d neo_days=%d",
+        "fetch_space_data date=%s rover=%s sol=%s photo_count=%d neo_days=%d neo_count=%d",
         date,
         rover,
         sol,
         photo_count,
         neo_days,
+        neo_count,
     )
     result = _nasa_client.fetch_all(
         apod_date=date,
@@ -53,6 +56,7 @@ def fetch_space_data(
         sol=sol,
         photo_count=photo_count,
         neo_days=neo_days,
+        neo_count=neo_count,
     )
     data = result.model_dump()
     logger.info("fetch_space_data_done error_count=%d", len(data.get("errors", [])))
