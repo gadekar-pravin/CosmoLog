@@ -6,25 +6,25 @@
   <title>CosmoLog - Mission Console</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #05060d;
-      --surface: #0d0f1a;
-      --surface-hover: #151829;
+      --surface: #0f1226;
+      --surface-hover: #22284c;
       --cosmic-blue: #6ea8ff;
       --nebula-purple: #b785ff;
       --accent-green: #5af2c7;
-      --star-white: #e2e8f0;
-      --muted: #64748b;
+      --star-white: #f4f5fb;
+      --muted: #6a7196;
       --success: #22c55e;
       --danger: #ef4444;
-      --border: rgba(110, 168, 255, 0.12);
-      --border-strong: rgba(110, 168, 255, 0.22);
-      --glass: rgba(13, 15, 26, 0.82);
-      --shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
-      --mono: "JetBrains Mono", ui-monospace, monospace;
-      --sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --border: rgba(154, 161, 189, 0.12);
+      --border-strong: rgba(154, 161, 189, 0.22);
+      --glass: rgba(15, 18, 38, 0.68);
+      --shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 30px 80px -30px rgba(0, 0, 0, 0.8);
+      --mono: "Space Mono", ui-monospace, monospace;
+      --sans: "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     * {
@@ -46,6 +46,8 @@
         var(--bg);
       color: var(--star-white);
       font-family: var(--sans);
+      font-feature-settings: "ss01", "cv11";
+      letter-spacing: -0.008em;
     }
 
     body::before,
@@ -140,9 +142,10 @@
       align-items: center;
       justify-content: space-between;
       min-height: 56px;
-      padding: 10px 18px;
-      border-radius: 10px;
+      padding: 10px 16px;
+      border-radius: 14px;
       gap: 16px;
+      background: linear-gradient(180deg, rgba(22, 26, 53, 0.72), rgba(15, 18, 38, 0.54));
     }
 
     .header-left {
@@ -176,15 +179,19 @@
     .brand h1 {
       margin: 0;
       color: #f8fafc;
-      font-size: 1rem;
-      font-weight: 400;
-      line-height: 1.2;
-      letter-spacing: 0;
+      font-size: 1.38rem;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: -0.03em;
       white-space: nowrap;
     }
 
     .brand h1 strong {
-      font-weight: 700;
+      background: linear-gradient(120deg, var(--cosmic-blue), var(--nebula-purple));
+      background-clip: text;
+      color: transparent;
+      font-weight: 600;
+      -webkit-background-clip: text;
     }
 
     .console-tag {
@@ -237,29 +244,37 @@
       align-items: center;
       gap: 12px;
       flex: 0 0 auto;
+      min-width: 0;
     }
 
     .run-button {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 14px;
-      border: 1px solid rgba(90, 242, 199, 0.3);
-      border-radius: 8px;
-      background: rgba(90, 242, 199, 0.1);
-      color: var(--accent-green);
+      padding: 8px 12px;
+      border: 1px solid rgba(110, 168, 255, 0.3);
+      border-radius: 999px;
+      background: rgba(15, 18, 38, 0.76);
+      color: #d6dae8;
       font-family: var(--mono);
-      font-size: 0.76rem;
+      font-size: 0.66rem;
       font-weight: 600;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       white-space: nowrap;
       transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
     }
 
     .run-button:hover:not(:disabled) {
-      background: rgba(90, 242, 199, 0.18);
-      border-color: rgba(90, 242, 199, 0.5);
+      background: rgba(34, 40, 76, 0.76);
+      border-color: rgba(110, 168, 255, 0.5);
+      color: var(--star-white);
       transform: translateY(-1px);
+    }
+
+    .run-button::before {
+      content: "\25b6";
+      font-size: 0.68rem;
     }
 
     .reset-button {
@@ -419,18 +434,77 @@
     }
 
     .message-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: flex-start;
+      gap: 10px;
       width: 100%;
       animation: fadeSlideUp 220ms ease both;
     }
 
     .message-row.user {
-      justify-content: flex-end;
+      grid-template-columns: minmax(0, 1fr) auto;
     }
 
     .message-row.agent,
     .message-row.error {
-      justify-content: flex-start;
+      justify-content: stretch;
+    }
+
+    .avatar {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .avatar.agent {
+      position: relative;
+      overflow: hidden;
+      border-color: rgba(110, 168, 255, 0.32);
+      background: linear-gradient(135deg, rgba(110, 168, 255, 0.18), rgba(183, 133, 255, 0.18));
+      color: var(--cosmic-blue);
+    }
+
+    .avatar.agent::before {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 35%, #ffffff 0 1px, transparent 2px),
+        radial-gradient(circle, var(--cosmic-blue) 0 48%, transparent 70%);
+      box-shadow: 0 0 10px rgba(110, 168, 255, 0.6);
+      content: "";
+    }
+
+    .avatar.user {
+      grid-column: 2;
+      background: rgba(244, 245, 251, 0.06);
+      color: #d6dae8;
+    }
+
+    .avatar.error {
+      border-color: rgba(239, 68, 68, 0.38);
+      background: rgba(127, 29, 29, 0.38);
+      color: #fecaca;
+    }
+
+    .message-content {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .message-row.user .message-content {
+      align-items: flex-end;
     }
 
     .message-bubble {
@@ -443,6 +517,7 @@
     }
 
     .message-row.user .message-bubble {
+      justify-self: end;
       border-color: rgba(110, 168, 255, 0.3);
       background: rgba(110, 168, 255, 0.15);
     }
@@ -457,6 +532,18 @@
       color: #fecaca;
     }
 
+    .msg-meta {
+      margin-top: 4px;
+      color: rgba(106, 113, 150, 0.82);
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.04em;
+    }
+
+    .message-row.user .msg-meta {
+      text-align: right;
+    }
+
     /* ── Chat empty state ──────────────────── */
 
     .empty-chat {
@@ -465,6 +552,10 @@
       place-items: center;
       padding: 24px 18px;
       text-align: center;
+    }
+
+    .empty-chat[hidden] {
+      display: none;
     }
 
     .empty-chat-inner {
@@ -609,15 +700,47 @@
       font-style: italic;
     }
 
-    .event-card.thinking summary span::before {
+    .event-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .event-name {
+      margin-top: 4px;
+      color: var(--star-white);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .event-name::before {
+      margin-right: 6px;
+      color: var(--muted);
+      content: "->";
+    }
+
+    .event-card.thinking .event-label::before {
       display: inline-block;
       width: 8px;
       height: 8px;
-      margin-right: 8px;
       border-radius: 50%;
       background: var(--nebula-purple);
       content: "";
       animation: pulse 1.6s ease-in-out infinite;
+    }
+
+    .event-card.tool .event-label::before {
+      color: var(--cosmic-blue);
+      content: "<>";
+      font-family: var(--mono);
+      font-size: 0.68rem;
     }
 
     pre {
@@ -645,6 +768,20 @@
       padding: 0;
       color: #bbf7d0;
       font-size: 0.86rem;
+    }
+
+    .tool-result summary::before {
+      margin-right: 6px;
+      color: var(--accent-green);
+      content: "ok";
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .tool-result .event-label::before {
+      content: none;
     }
 
     /* ── Typing indicator ──────────────────── */
@@ -793,7 +930,23 @@
       position: relative;
       min-height: 0;
       flex: 1;
-      background: rgba(2, 6, 23, 0.24);
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(5, 6, 13, 0.4), rgba(5, 6, 13, 0.62)),
+        radial-gradient(ellipse at 50% 50%, rgba(15, 18, 38, 0.5), transparent 72%);
+    }
+
+    .dashboard-stage::before {
+      position: absolute;
+      inset: 0;
+      opacity: 0.72;
+      background-image:
+        linear-gradient(rgba(110, 168, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(110, 168, 255, 0.045) 1px, transparent 1px);
+      background-size: 32px 32px;
+      content: "";
+      mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
+      pointer-events: none;
     }
 
     .dashboard-placeholder,
@@ -801,6 +954,7 @@
     .dashboard-frame {
       position: absolute;
       inset: 0;
+      z-index: 1;
       transition: opacity 220ms ease, visibility 220ms ease;
     }
 
@@ -823,8 +977,8 @@
 
     .solar-system {
       position: relative;
-      width: 200px;
-      height: 200px;
+      width: min(280px, 54vw);
+      height: min(280px, 54vw);
     }
 
     .solar-system svg {
@@ -834,10 +988,12 @@
 
     .dashboard-hero-title {
       margin: 0;
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+      font-weight: 500;
       color: #f8fafc;
-      max-width: 400px;
+      max-width: 520px;
+      letter-spacing: -0.035em;
+      line-height: 1.12;
     }
 
     .dashboard-hero-title .highlight {
@@ -847,9 +1003,9 @@
     .dashboard-hero-sub {
       margin: 6px 0 0;
       color: var(--muted);
-      font-size: 0.86rem;
-      line-height: 1.55;
-      max-width: 400px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-width: 460px;
     }
 
     .kbd-hint {
@@ -890,6 +1046,7 @@
       width: 100%;
       height: 100%;
       border: 0;
+      z-index: 2;
       opacity: 0;
       visibility: hidden;
       background: #ffffff;
@@ -906,6 +1063,113 @@
       gap: 8px;
       color: #bfdbfe;
       font-weight: 700;
+    }
+
+    .loading-frame {
+      width: min(540px, 100%);
+    }
+
+    .loading-rings {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 22px;
+    }
+
+    .loading-rings .ring {
+      position: absolute;
+      inset: 0;
+      border: 1.5px solid transparent;
+      border-top-color: var(--cosmic-blue);
+      border-radius: 50%;
+      animation: spin 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .loading-rings .ring:nth-child(2) {
+      inset: 14px;
+      border-top-color: var(--nebula-purple);
+      animation-direction: reverse;
+      animation-duration: 1.8s;
+    }
+
+    .loading-rings .ring:nth-child(3) {
+      inset: 28px;
+      border-top-color: var(--accent-green);
+      animation-duration: 2.4s;
+    }
+
+    .loading-rings .core {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--cosmic-blue);
+      box-shadow: 0 0 20px var(--cosmic-blue);
+      transform: translate(-50%, -50%);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    .loading-title {
+      margin: 0 0 6px;
+      color: var(--star-white);
+      font-size: 1.35rem;
+      font-weight: 500;
+      letter-spacing: -0.025em;
+    }
+
+    .loading-sub {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .loading-log {
+      display: flex;
+      max-width: 390px;
+      margin: 18px auto 0;
+      padding: 0;
+      flex-direction: column;
+      gap: 5px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
+      list-style: none;
+      text-align: left;
+    }
+
+    .loading-log li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 9px;
+      border-radius: 6px;
+    }
+
+    .loading-log li::before {
+      color: var(--muted);
+      content: "○";
+    }
+
+    .loading-log li.done {
+      color: var(--accent-green);
+    }
+
+    .loading-log li.done::before {
+      content: "✓";
+    }
+
+    .loading-log li.active {
+      background: rgba(110, 168, 255, 0.08);
+      color: var(--star-white);
+    }
+
+    .loading-log li.active::before {
+      color: var(--cosmic-blue);
+      content: "▸";
     }
 
     .loader span {
@@ -1053,12 +1317,32 @@
       }
 
       .run-button {
-        font-size: 0.7rem;
-        padding: 6px 10px;
+        width: 36px;
+        height: 34px;
+        justify-content: center;
+        padding: 0;
+        overflow: hidden;
+        font-size: 0;
+      }
+
+      .run-button::before {
+        font-size: 0.72rem;
       }
 
       .reset-button {
-        display: none;
+        display: inline-flex;
+        width: 36px;
+        height: 34px;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        overflow: hidden;
+        font-size: 0;
+      }
+
+      .reset-button::before {
+        content: "\21bb";
+        font-size: 0.9rem;
       }
 
       .suggested-prompts {
@@ -1122,6 +1406,12 @@
       }
       40% {
         transform: translateY(-5px);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
     }
 
@@ -1210,7 +1500,7 @@
       </div>
 
       <div class="header-right">
-        <button class="run-button" id="runButton" type="button">&#9654; RUN SAMPLE MISSION</button>
+        <button class="run-button" id="runButton" type="button">RUN SAMPLE MISSION</button>
         <button class="reset-button" id="resetButton" type="button">Reset</button>
       </div>
     </header>
@@ -1330,11 +1620,21 @@
           </div>
 
           <div class="dashboard-loading" id="dashboardLoading" aria-hidden="true">
-            <div class="loader">
-              Rendering dashboard
-              <span></span>
-              <span></span>
-              <span></span>
+            <div class="loading-frame">
+              <div class="loading-rings" aria-hidden="true">
+                <div class="ring"></div>
+                <div class="ring"></div>
+                <div class="ring"></div>
+                <div class="core"></div>
+              </div>
+              <h3 class="loading-title">Composing your dashboard...</h3>
+              <p class="loading-sub">Streaming components from Prefab.</p>
+              <ul class="loading-log" aria-label="Dashboard render progress">
+                <li class="done">NASA data received</li>
+                <li class="done">Journal context prepared</li>
+                <li class="active">Rendering dashboard</li>
+                <li>Handoff to live frame</li>
+              </ul>
             </div>
           </div>
 
@@ -1415,6 +1715,10 @@
     updateUtcClock();
     setInterval(updateUtcClock, 1000);
 
+    function nowStamp() {
+      return new Date().toTimeString().slice(0, 8);
+    }
+
     /* ── UI helpers ────────────────────────── */
     function setProcessing(processing) {
       isProcessing = processing;
@@ -1474,10 +1778,38 @@
       setHasMessages(true);
       const row = document.createElement("div");
       row.className = "message-row " + role;
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar " + (role === "user" ? "user" : role === "error" ? "error" : "agent");
+      avatar.setAttribute("aria-hidden", "true");
+      if (role === "user") {
+        avatar.textContent = "YOU";
+      } else if (role === "error") {
+        avatar.textContent = "!";
+      }
+
+      const content = document.createElement("div");
+      content.className = "message-content";
+
       const bubble = document.createElement("div");
       bubble.className = "message-bubble";
       bubble.textContent = text;
-      row.appendChild(bubble);
+
+      const meta = document.createElement("div");
+      meta.className = "msg-meta";
+      meta.textContent = nowStamp() + " · " + (role === "user" ? "you" : role === "error" ? "error" : "CosmoLog");
+
+      content.appendChild(bubble);
+      content.appendChild(meta);
+
+      if (role === "user") {
+        row.appendChild(content);
+        row.appendChild(avatar);
+      } else {
+        row.appendChild(avatar);
+        row.appendChild(content);
+      }
+
       messages.appendChild(row);
       scrollMessages();
     }
@@ -1488,8 +1820,10 @@
       card.className = "event-card thinking";
 
       const details = document.createElement("details");
+      details.open = true;
       const summary = document.createElement("summary");
       const summarySpan = document.createElement("span");
+      summarySpan.className = "event-label";
       summarySpan.textContent = "Thinking";
       summary.appendChild(summarySpan);
       details.appendChild(summary);
@@ -1514,9 +1848,16 @@
       details.open = true;
 
       const summary = document.createElement("summary");
-      const summarySpan = document.createElement("span");
-      summarySpan.textContent = "Tool call: " + name;
-      summary.appendChild(summarySpan);
+      const summaryText = document.createElement("div");
+      const summaryLabel = document.createElement("span");
+      summaryLabel.className = "event-label";
+      summaryLabel.textContent = "Tool call";
+      const summaryName = document.createElement("div");
+      summaryName.className = "event-name";
+      summaryName.textContent = name;
+      summaryText.appendChild(summaryLabel);
+      summaryText.appendChild(summaryName);
+      summary.appendChild(summaryText);
       details.appendChild(summary);
 
       const body = document.createElement("div");
@@ -1559,6 +1900,7 @@
       const details = document.createElement("details");
       const summary = document.createElement("summary");
       const summarySpan = document.createElement("span");
+      summarySpan.className = "event-label";
       summarySpan.textContent = "Tool result";
       summary.appendChild(summarySpan);
       details.appendChild(summary);
