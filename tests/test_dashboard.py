@@ -263,3 +263,83 @@ def test_count_components_helper():
     assert type_counts["Row"] == 1
     assert type_counts["Text"] == 1
     assert type_counts["Badge"] == 2
+
+
+# --- Animation and new component tests ---
+
+
+def test_stat_tiles_have_fade_in_animation():
+    result = build_dashboard(space_data=IMAGE_SPACE_DATA, journal_entries=SAMPLE_JOURNAL_ENTRIES)
+    tree = result.to_json()
+    cards = find_components(tree, "Card")
+
+    animated = [c for c in cards if "animate-fade-in" in (c.get("cssClass") or "")]
+    assert len(animated) >= 5, f"Expected >=5 stat cards with fade-in, got {len(animated)}"
+
+
+def test_live_badge_has_pulse_animation():
+    result = build_dashboard(space_data=IMAGE_SPACE_DATA)
+    tree = result.to_json()
+    badges = find_components(tree, "Badge")
+
+    live_badges = [b for b in badges if b.get("label") == "Live"]
+    assert len(live_badges) == 1
+    assert "animate-pulse" in (live_badges[0].get("cssClass") or "")
+
+
+def test_apod_image_has_zoom_animation():
+    result = build_dashboard(space_data=IMAGE_SPACE_DATA)
+    tree = result.to_json()
+    images = find_components(tree, "Image")
+
+    apod_images = [i for i in images if "animate-zoom-in" in (i.get("cssClass") or "")]
+    assert len(apod_images) >= 1
+
+
+def test_apod_video_embed_has_zoom_animation():
+    result = build_dashboard(space_data=VIDEO_SPACE_DATA)
+    tree = result.to_json()
+    embeds = find_components(tree, "Embed")
+
+    assert len(embeds) == 1
+    assert "animate-zoom-in" in (embeds[0].get("cssClass") or "")
+
+
+def test_hazardous_badge_has_pulse_animation():
+    result = build_dashboard(space_data=IMAGE_SPACE_DATA)
+    tree = result.to_json()
+    badges = find_components(tree, "Badge")
+
+    hazardous = [b for b in badges if b.get("label") == "Hazardous"]
+    assert len(hazardous) >= 1
+    assert all("animate-pulse" in (b.get("cssClass") or "") for b in hazardous)
+
+
+def test_rover_photos_use_carousel():
+    result = build_dashboard(space_data=IMAGE_SPACE_DATA)
+    tree = result.to_json()
+
+    carousels = find_components(tree, "Carousel")
+    assert len(carousels) == 1
+
+    carousel = carousels[0]
+    assert carousel.get("autoAdvance") == 4000
+    assert carousel.get("effect") == "fade"
+    assert carousel.get("loop") is True
+    assert carousel.get("showDots") is True
+
+
+def test_neo_section_has_progress_bars():
+    result = build_dashboard(space_data=IMAGE_SPACE_DATA)
+    tree = result.to_json()
+
+    progress_bars = find_components(tree, "Progress")
+    assert len(progress_bars) == 2  # One per NEO
+
+    # The closest NEO (7.5M km) should have a higher value than the farthest (50M km)
+    values = [p.get("value", 0) for p in progress_bars]
+    assert values[0] > values[1], f"Closer NEO should have higher proximity: {values}"
+
+    # Hazardous NEO should use destructive variant
+    hazardous_progress = [p for p in progress_bars if p.get("variant") == "destructive"]
+    assert len(hazardous_progress) == 1

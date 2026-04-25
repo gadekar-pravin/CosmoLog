@@ -19,6 +19,7 @@ from prefab_ui.components import (
     CardFooter,
     CardHeader,
     CardTitle,
+    Carousel,
     Column,
     Dot,
     Embed,
@@ -29,6 +30,7 @@ from prefab_ui.components import (
     Markdown,
     Metric,
     Muted,
+    Progress,
     Row,
     Separator,
     Small,
@@ -115,7 +117,7 @@ def build_dashboard(
 def _build_header(tag_filter: str | None) -> None:
     with Row(gap=3, align="center"):
         H2("CosmoLog")
-        Badge("Live", variant="success")
+        Badge("Live", variant="success", css_class="animate-pulse")
         if tag_filter:
             Badge(f"Filter: {tag_filter}", variant="secondary")
 
@@ -128,20 +130,20 @@ def _build_stat_tiles(
     closest_neo_date: str,
 ) -> None:
     with Grid(columns={"default": 2, "md": 5}, gap=4):
-        with Card():
+        with Card(css_class="animate-fade-in duration-500"):
             Metric(label="Journal Entries", value=len(entries))
-        with Card():
+        with Card(css_class="animate-fade-in duration-500 delay-100"):
             Metric(label="Rover Photos", value=len(rover_photos))
-        with Card():
+        with Card(css_class="animate-fade-in duration-500 delay-200"):
             Metric(label="Near-Earth Objects", value=len(neos))
-        with Card():
+        with Card(css_class="animate-fade-in duration-500 delay-300"):
             Metric(
                 label="Hazardous",
                 value=hazardous_count,
                 trend="up" if hazardous_count > 0 else "neutral",
                 trend_sentiment="negative" if hazardous_count > 0 else "neutral",
             )
-        with Card():
+        with Card(css_class="animate-fade-in duration-500 delay-500"):
             Metric(label="Closest NEO", value=closest_neo_date)
 
 
@@ -166,12 +168,14 @@ def _build_apod_section(apod: dict[str, Any] | None) -> None:
                     width="100%",
                     height="400px",
                     allow="fullscreen; autoplay",
+                    css_class="animate-zoom-in-95 duration-700",
                 )
             else:
                 Image(
                     src=url,
                     alt=title,
                     width="100%",
+                    css_class="animate-zoom-in-95 duration-700",
                 )
             Text(apod.get("explanation", ""), css_class="mt-4 text-sm")
         with CardFooter():
@@ -187,7 +191,14 @@ def _build_rover_section(rover_photos: list[dict[str, Any]]) -> None:
         Muted("No rover photos available.")
         return
 
-    with Grid(columns={"default": 1, "sm": 3}, gap=4):
+    with Carousel(
+        auto_advance=4000,
+        effect="fade",
+        loop=True,
+        show_dots=True,
+        pause_on_hover=True,
+        css_class="animate-fade-in duration-500",
+    ):
         for photo in rover_photos:
             with Card():
                 Image(
@@ -287,6 +298,7 @@ def _build_journal_entry(entry: dict[str, Any]) -> None:
 
 def _build_neo_section(neos: list[dict[str, Any]]) -> None:
     H3("Near-Earth Objects")
+    max_dist = max((n.get("miss_distance_km", 0) for n in neos), default=1) or 1
     with Card():
         with Table():
             with TableHeader():
@@ -294,27 +306,39 @@ def _build_neo_section(neos: list[dict[str, Any]]) -> None:
                     TableHead("Name")
                     TableHead("Approach Date")
                     TableHead("Miss Distance (km)")
+                    TableHead("Proximity")
                     TableHead("Velocity (km/h)")
                     TableHead("Diameter (m)")
                     TableHead("Status")
             with TableBody():
                 for neo in neos:
-                    _build_neo_row(neo)
+                    _build_neo_row(neo, max_dist)
 
 
-def _build_neo_row(neo: dict[str, Any]) -> None:
+def _build_neo_row(neo: dict[str, Any], max_dist: float) -> None:
+    dist = neo.get("miss_distance_km", 0)
+    proximity_pct = max(0, min(100, 100 * (1 - dist / max_dist)))
+    is_hazardous = neo.get("is_potentially_hazardous", False)
+
     with TableRow():
         TableCell(neo.get("name", "Unknown object"))
         TableCell(neo.get("close_approach_date", "N/A"))
-        TableCell(f"{neo.get('miss_distance_km', 0):,.0f}")
+        TableCell(f"{dist:,.0f}")
+        with TableCell():
+            Progress(
+                value=proximity_pct,
+                variant="destructive" if is_hazardous else "info",
+                size="sm",
+                gradient=True,
+            )
         TableCell(f"{neo.get('relative_velocity_kph', 0):,.0f}")
         TableCell(
             f"{neo.get('estimated_diameter_meters_min', 0):.0f}"
             f" - {neo.get('estimated_diameter_meters_max', 0):.0f}"
         )
         with TableCell():
-            if neo.get("is_potentially_hazardous"):
-                Badge("Hazardous", variant="destructive")
+            if is_hazardous:
+                Badge("Hazardous", variant="destructive", css_class="animate-pulse")
             else:
                 Badge("Safe", variant="success")
 
