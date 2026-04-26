@@ -567,8 +567,8 @@
 
     .orbit-anim {
       position: relative;
-      width: 260px;
-      height: 260px;
+      width: 280px;
+      height: 280px;
     }
 
     .orbit-anim::before {
@@ -576,64 +576,19 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 180px;
-      height: 180px;
+      width: 200px;
+      height: 200px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(110,168,255,0.18) 0%, rgba(183,133,255,0.10) 40%, transparent 70%);
       transform: translate(-50%, -50%);
       pointer-events: none;
     }
 
-    .orbit-anim .orbit-ring {
-      position: absolute;
-      border-radius: 50%;
-      border: 1px dashed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .orbit-anim .orbit-ring-1 {
-      width: 180px;
-      height: 180px;
-      border-color: rgba(110, 168, 255, 0.15);
-    }
-
-    .orbit-anim .orbit-ring-2 {
-      width: 250px;
-      height: 250px;
-      border-color: rgba(183, 133, 255, 0.10);
-    }
-
-    .orbit-anim .planet-core {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: rgba(220, 225, 240, 0.9);
-      box-shadow: 0 0 16px rgba(183, 133, 255, 0.3);
-      transform: translate(-50%, -50%);
-    }
-
-    .orbit-anim .orbit-dot {
-      position: absolute;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-    }
-
-    .orbit-anim .orbit-dot-1 {
-      background: rgba(220, 225, 240, 0.7);
-      box-shadow: 0 0 8px rgba(200, 210, 230, 0.4);
-      animation: orbitChat1 6s linear infinite;
-    }
-
-    .orbit-anim .orbit-dot-2 {
-      display: none;
+    .signal-wave {
+      width: min(280px, 80%);
+      height: 30px;
+      opacity: 0.6;
+      margin-top: 12px;
     }
 
     .empty-chat-title {
@@ -1516,13 +1471,38 @@
     }
 
     @keyframes orbitChat1 {
-      from { transform: translate(-50%, -50%) rotate(0deg) translateX(90px) rotate(0deg); }
-      to   { transform: translate(-50%, -50%) rotate(360deg) translateX(90px) rotate(-360deg); }
+      from { transform: rotate(0deg) translateX(55px) rotate(0deg); }
+      to   { transform: rotate(360deg) translateX(55px) rotate(-360deg); }
     }
 
     @keyframes orbitChat2 {
-      from { transform: translate(-50%, -50%) rotate(0deg) translateX(125px) rotate(0deg); }
-      to   { transform: translate(-50%, -50%) rotate(360deg) translateX(125px) rotate(-360deg); }
+      from { transform: rotate(150deg) translateX(100px) rotate(-150deg); }
+      to   { transform: rotate(510deg) translateX(100px) rotate(-510deg); }
+    }
+
+    @keyframes orbitChat3 {
+      from { transform: rotate(270deg) translateX(75px) rotate(-270deg); }
+      to   { transform: rotate(-90deg) translateX(75px) rotate(90deg); }
+    }
+
+    @keyframes beaconPulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50%      { opacity: 0.55; transform: scale(1.05); }
+    }
+
+    @keyframes beaconGlowPulse {
+      0%, 100% { opacity: 0.25; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(1.08); }
+    }
+
+    @keyframes signalRing {
+      0%   { transform: scale(0.3); opacity: 0.4; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    @keyframes waveFloat {
+      0%, 100% { transform: translateX(-5px); }
+      50%      { transform: translateX(5px); }
     }
 
     /* Mercury – innermost, fast */
@@ -1793,15 +1773,80 @@
           <div class="empty-chat" id="emptyChat">
             <div class="empty-chat-inner">
               <div class="orbit-anim" aria-hidden="true">
-                <div class="orbit-ring orbit-ring-1"></div>
-                <div class="orbit-ring orbit-ring-2"></div>
-                <div class="planet-core"></div>
-                <div class="orbit-dot orbit-dot-1"></div>
-                <div class="orbit-dot orbit-dot-2"></div>
+                <svg viewBox="0 0 260 260" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="chatBeaconGlow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#6ea8ff" stop-opacity="0.25"/>
+                      <stop offset="60%" stop-color="#b785ff" stop-opacity="0.10"/>
+                      <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
+                    </radialGradient>
+                    <radialGradient id="chatBeaconCore" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stop-color="#dce1f0"/>
+                      <stop offset="50%" stop-color="#6ea8ff"/>
+                      <stop offset="100%" stop-color="#1a2744"/>
+                    </radialGradient>
+                    <radialGradient id="chatSat" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stop-color="#7df3ff"/>
+                      <stop offset="100%" stop-color="#2a8a8a"/>
+                    </radialGradient>
+                    <radialGradient id="chatProbe" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stop-color="#d4b3ff"/>
+                      <stop offset="100%" stop-color="#7b4fbf"/>
+                    </radialGradient>
+                  </defs>
+                  <!-- Background stars -->
+                  <circle cx="20" cy="30" r="0.6" fill="white" opacity="0.4"/>
+                  <circle cx="240" cy="25" r="0.5" fill="white" opacity="0.3"/>
+                  <circle cx="45" cy="230" r="0.7" fill="white" opacity="0.35" style="animation: twinkle 3s ease-in-out infinite"/>
+                  <circle cx="215" cy="220" r="0.4" fill="white" opacity="0.3"/>
+                  <circle cx="15" cy="140" r="0.8" fill="white" opacity="0.4" style="animation: twinkle 4s ease-in-out infinite 1s"/>
+                  <circle cx="250" cy="130" r="0.5" fill="white" opacity="0.35"/>
+                  <circle cx="100" cy="15" r="0.6" fill="white" opacity="0.3" style="animation: twinkle 3.5s ease-in-out infinite 0.5s"/>
+                  <circle cx="180" cy="245" r="0.5" fill="white" opacity="0.4"/>
+                  <!-- Signal rings -->
+                  <circle cx="130" cy="130" r="25" fill="none" stroke="#6ea8ff" stroke-width="0.5" opacity="0.3" style="transform-origin: 130px 130px; animation: signalRing 3s ease-out infinite"/>
+                  <circle cx="130" cy="130" r="25" fill="none" stroke="#6ea8ff" stroke-width="0.5" opacity="0.3" style="transform-origin: 130px 130px; animation: signalRing 3s ease-out infinite 1s"/>
+                  <circle cx="130" cy="130" r="25" fill="none" stroke="#6ea8ff" stroke-width="0.5" opacity="0.3" style="transform-origin: 130px 130px; animation: signalRing 3s ease-out infinite 2s"/>
+                  <!-- Central beacon -->
+                  <circle cx="130" cy="130" r="70" fill="url(#chatBeaconGlow)" style="transform-origin: 130px 130px; animation: beaconPulse 4s ease-in-out infinite"/>
+                  <circle cx="130" cy="130" r="30" fill="#6ea8ff" opacity="0.12" style="transform-origin: 130px 130px; animation: beaconGlowPulse 3s ease-in-out infinite 1.5s"/>
+                  <circle cx="130" cy="130" r="12" fill="url(#chatBeaconCore)"/>
+                  <circle cx="125" cy="125" r="4" fill="white" opacity="0.10"/>
+                  <!-- Orbit rings -->
+                  <circle cx="130" cy="130" r="55" fill="none" stroke="#6ea8ff" stroke-width="0.5" stroke-dasharray="3 5" opacity="0.15"/>
+                  <circle cx="130" cy="130" r="100" fill="none" stroke="#b785ff" stroke-width="0.5" stroke-dasharray="3 7" opacity="0.10"/>
+                  <!-- Debris -->
+                  <g style="transform-origin: 130px 130px; animation: orbitChat3 15s linear infinite">
+                    <circle cx="130" cy="130" r="1.5" fill="#8899aa"/>
+                  </g>
+                  <!-- Probe -->
+                  <g style="transform-origin: 130px 130px; animation: orbitChat2 11s linear infinite">
+                    <circle cx="130" cy="130" r="8" fill="#b785ff" opacity="0.12"/>
+                    <circle cx="130" cy="130" r="4" fill="url(#chatProbe)"/>
+                  </g>
+                  <!-- Satellite -->
+                  <g style="transform-origin: 130px 130px; animation: orbitChat1 7s linear infinite">
+                    <circle cx="130" cy="130" r="9" fill="#6ea8ff" opacity="0.12"/>
+                    <circle cx="130" cy="130" r="4.5" fill="url(#chatSat)"/>
+                    <line x1="121" y1="130" x2="125" y2="130" stroke="#7df3ff" stroke-width="0.7" opacity="0.6"/>
+                    <line x1="135" y1="130" x2="139" y2="130" stroke="#7df3ff" stroke-width="0.7" opacity="0.6"/>
+                  </g>
+                </svg>
               </div>
               <div>
                 <h3 class="empty-chat-title">Awaiting your transmission</h3>
                 <p class="empty-chat-sub">Ask CosmoLog to fetch NASA data, log to your space journal, or render a live dashboard.</p>
+              </div>
+              <div class="signal-wave" aria-hidden="true">
+                <svg viewBox="0 0 280 30" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0,15 Q20,5 40,15 Q60,25 80,15 Q100,5 120,15 Q140,25 160,15 Q180,5 200,15 Q220,25 240,15 Q260,5 280,15" fill="none" stroke="#6ea8ff" stroke-width="0.8" opacity="0.15" style="animation: waveFloat 8s ease-in-out infinite"/>
+                  <path d="M0,17 Q20,7 40,17 Q60,27 80,17 Q100,7 120,17 Q140,27 160,17 Q180,7 200,17 Q220,27 240,17 Q260,7 280,17" fill="none" stroke="#b785ff" stroke-width="0.6" opacity="0.10" style="animation: waveFloat 8s ease-in-out infinite 0.5s"/>
+                  <circle cx="40" cy="15" r="1" fill="#6ea8ff" opacity="0.4" style="animation: twinkle 2.5s ease-in-out infinite"/>
+                  <circle cx="120" cy="15" r="0.8" fill="#b785ff" opacity="0.3"/>
+                  <circle cx="200" cy="15" r="1" fill="#6ea8ff" opacity="0.35" style="animation: twinkle 3s ease-in-out infinite 1s"/>
+                  <circle cx="260" cy="15" r="0.7" fill="#b785ff" opacity="0.3" style="animation: twinkle 2s ease-in-out infinite 0.5s"/>
+                  <circle cx="80" cy="15" r="0.6" fill="#6ea8ff" opacity="0.3"/>
+                </svg>
               </div>
             </div>
           </div>
