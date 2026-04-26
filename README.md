@@ -4,6 +4,10 @@ NASA Space Mission Journal Dashboard — an MCP application built with FastMCP a
 
 CosmoLog fetches live NASA data (Astronomy Picture of the Day, Mars rover photos, near-Earth objects), stores selections in a local journal, and renders an interactive dashboard — all exposed as MCP tools for use with AI assistants. The agent web app layers a conversational Gemini interface over these tools with real-time streaming and a themed mission console UI.
 
+## Demo
+
+[![CosmoLog Demo](https://img.youtube.com/vi/XKHB9NBlpFE/maxresdefault.jpg)](https://youtu.be/XKHB9NBlpFE)
+
 ## Features
 
 - **Astronomy Picture of the Day** — image and video (iframe) support
