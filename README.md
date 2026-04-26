@@ -8,6 +8,8 @@ CosmoLog fetches live NASA data (Astronomy Picture of the Day, Mars rover photos
 
 [![CosmoLog Demo](https://img.youtube.com/vi/XKHB9NBlpFE/maxresdefault.jpg)](https://youtu.be/XKHB9NBlpFE)
 
+▶️ [Watch the demo on YouTube](https://youtu.be/XKHB9NBlpFE)
+
 ## Features
 
 - **Astronomy Picture of the Day** — image and video (iframe) support
