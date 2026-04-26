@@ -9,7 +9,7 @@ from collections.abc import AsyncGenerator, Callable
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from google import genai
@@ -409,6 +409,16 @@ async def chat(request: ChatRequest) -> EventSourceResponse:
     set_correlation_id(cid)
     logger.info("chat_request correlation_id=%s message_len=%d", cid, len(request.message))
     return EventSourceResponse(_sse_event_stream(request.message))
+
+
+@app.delete("/api/journal/{entry_id}")
+async def delete_journal_entry(entry_id: str) -> dict[str, str]:
+    try:
+        manage_space_journal(operation="delete", entry_id=entry_id)
+        return {"status": "ok"}
+    except Exception as exc:
+        logger.error("delete_journal_entry error entry_id=%s", entry_id, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.post("/reset")

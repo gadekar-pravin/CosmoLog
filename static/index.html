@@ -1375,6 +1375,76 @@
       }
     }
 
+    /* ── Collapsible chat drawer ──────────── */
+
+    .chat-toggle {
+      position: absolute;
+      top: 12px;
+      left: -16px;
+      z-index: 10;
+      display: flex;
+      width: 32px;
+      height: 32px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-strong);
+      border-radius: 50%;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.78rem;
+      transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .chat-toggle:hover {
+      background: var(--surface-hover);
+      color: var(--star-white);
+      transform: scale(1.1);
+    }
+
+    .chat-panel.collapsed {
+      width: 0;
+      min-width: 0;
+      overflow: hidden;
+      border: none;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .chat-panel.collapsed + .dashboard-panel {
+      width: 100%;
+    }
+
+    .floating-composer {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      z-index: 10;
+      display: none;
+      width: min(600px, 90%);
+      transform: translateX(-50%);
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      padding: 10px;
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      gap: 8px;
+    }
+
+    .floating-composer.visible {
+      display: flex;
+    }
+
+    .floating-composer .chat-input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .floating-composer .send-button {
+      flex: 0 0 auto;
+      padding: 0 14px;
+    }
+
     /* ── Animations ────────────────────────── */
 
     @keyframes fadeSlideUp {
@@ -1571,6 +1641,7 @@
       </aside>
 
       <section class="dashboard-panel" aria-label="Dashboard panel">
+        <button class="chat-toggle" id="chatToggle" type="button" title="Toggle chat panel" aria-label="Toggle chat panel">&#x25C4;</button>
         <div class="panel-heading">
           <div class="panel-title">
             <div class="panel-dot"></div>
@@ -1639,6 +1710,12 @@
           </div>
 
           <iframe class="dashboard-frame" id="dashboardFrame" title="CosmoLog dashboard"></iframe>
+
+          <div class="floating-composer" id="floatingComposer">
+            <label class="sr-only" for="floatingInput">Ask about space</label>
+            <input class="chat-input" id="floatingInput" type="text" autocomplete="off" placeholder="Ask the agent..." aria-label="Ask the agent">
+            <button class="send-button" id="floatingSend" type="button">Send &#8594;</button>
+          </div>
         </div>
       </section>
     </main>
@@ -1683,6 +1760,12 @@
     const dashboardLoading = document.querySelector("#dashboardLoading");
     const dashboardFrame = document.querySelector("#dashboardFrame");
 
+    const chatPanel = document.querySelector(".chat-panel");
+    const chatToggle = document.querySelector("#chatToggle");
+    const floatingComposer = document.querySelector("#floatingComposer");
+    const floatingInput = document.querySelector("#floatingInput");
+    const floatingSend = document.querySelector("#floatingSend");
+
     // Telemetry
     const telemUtc = document.querySelector("#telemUtc");
     const telemLatency = document.querySelector("#telemLatency");
@@ -1700,6 +1783,7 @@
     let eventCount = 0;
     let toolCallCount = 0;
     let requestStartTime = 0;
+    let pendingDashboardHtml = null;
 
     /* ── Init: session ID + clock + kbd hint ─ */
     const sessionId = Math.floor(Math.random() * 0xFFFF).toString(16).padStart(4, "0");
@@ -1979,7 +2063,7 @@
           addToolResult(payload.name || "unknown", payload.result);
           break;
         case "dashboard":
-          showDashboard(payload.html || "");
+          pendingDashboardHtml = payload.html || "";
           break;
         case "text":
           addMessage("agent", textFromPayload(payload));
@@ -1994,6 +2078,10 @@
           updateDashboardStatus(dashboardFrame.classList.contains("visible") ? "Live" : "Standby");
           break;
         case "done":
+          if (pendingDashboardHtml !== null) {
+            showDashboard(pendingDashboardHtml);
+            pendingDashboardHtml = null;
+          }
           setProcessing(false);
           messageInput.focus();
           break;
@@ -2082,6 +2170,7 @@
         messages.appendChild(emptyChat);
         setHasMessages(false);
         latestToolCard = null;
+        pendingDashboardHtml = null;
         eventCount = 0;
         toolCallCount = 0;
         sbEvents.textContent = "0";
@@ -2109,6 +2198,33 @@
 
     runButton.addEventListener("click", function() {
       sendMessage("Fetch today's APOD and Mars rover photos, save them to my journal, and show the full dashboard");
+    });
+
+    // Chat panel toggle
+    chatToggle.addEventListener("click", function() {
+      var collapsed = chatPanel.classList.toggle("collapsed");
+      chatToggle.textContent = collapsed ? "\u25B6" : "\u25C4";
+      floatingComposer.classList.toggle("visible", collapsed);
+    });
+
+    floatingSend.addEventListener("click", function() {
+      sendMessage(floatingInput.value);
+      floatingInput.value = "";
+    });
+
+    floatingInput.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage(floatingInput.value);
+        floatingInput.value = "";
+      }
+    });
+
+    // Bridge: receive postMessage from dashboard iframe
+    window.addEventListener("message", function(event) {
+      if (event.data && event.data.type === "cosmolog:sendMessage" && event.data.text) {
+        sendMessage(event.data.text);
+      }
     });
 
     // Cmd+K / Ctrl+K to focus chat input

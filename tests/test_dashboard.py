@@ -143,9 +143,9 @@ def test_build_dashboard_with_journal_entries():
     assert result.state == {"tag_filter": "mars-week"}
     assert "Filter: mars-week" in tree_str
     assert "Test Nebula" in tree_str
-    assert "toolCall" in tree_str
-    assert "sendMessage" in tree_str
-    assert "manage_space_journal" in tree_str
+    assert "callHandler" in tree_str
+    assert "fetch" in tree_str
+    assert "/api/journal/" in tree_str
     assert any(button["label"] == "Edit" for button in buttons)
     assert any(button["label"] == "Delete" for button in buttons)
 

@@ -3,8 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from prefab_ui.actions import ShowToast
-from prefab_ui.actions.mcp import CallTool, SendMessage
+from prefab_ui.actions import CallHandler, Fetch, ShowToast
 from prefab_ui.app import PrefabApp
 from prefab_ui.components import (
     H2,
@@ -111,6 +110,14 @@ def build_dashboard(
         title="CosmoLog",
         view=view,
         state={"tag_filter": tag_filter or ""},
+        js_actions={
+            "sendToChat": """(ctx) => {
+                window.parent.postMessage(
+                    { type: "cosmolog:sendMessage", text: ctx.arguments.text },
+                    "*"
+                );
+            }""",
+        },
     )
 
 
@@ -252,8 +259,12 @@ def _build_journal_entry(entry: dict[str, Any]) -> None:
                             icon="pencil",
                             size="icon-xs",
                             variant="ghost",
-                            on_click=SendMessage(
-                                f"Update journal entry '{entry_id}' -- ask me what to change"
+                            on_click=CallHandler(
+                                "sendToChat",
+                                arguments={
+                                    "text": f"Update journal entry '{entry_id}'"
+                                    " -- ask me what to change"
+                                },
                             ),
                         )
                     with Tooltip("Delete this entry"):
@@ -262,12 +273,8 @@ def _build_journal_entry(entry: dict[str, Any]) -> None:
                             icon="trash-2",
                             size="icon-xs",
                             variant="ghost",
-                            on_click=CallTool(
-                                "manage_space_journal",
-                                arguments={
-                                    "operation": "delete",
-                                    "entry_id": entry_id,
-                                },
+                            on_click=Fetch.delete(
+                                f"/api/journal/{entry_id}",
                                 on_success=ShowToast(
                                     "Entry deleted",
                                     variant="success",
@@ -350,7 +357,10 @@ def _build_refresh_section() -> None:
             "Refresh Dashboard",
             icon="refresh-cw",
             variant="outline",
-            on_click=SendMessage("Read the journal entries and refresh the space dashboard"),
+            on_click=CallHandler(
+                "sendToChat",
+                arguments={"text": "Read the journal entries and refresh the space dashboard"},
+            ),
         )
 
 
