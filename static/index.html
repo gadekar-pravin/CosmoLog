@@ -1525,19 +1525,55 @@
       to   { transform: translate(-50%, -50%) rotate(360deg) translateX(125px) rotate(-360deg); }
     }
 
+    /* Mercury – innermost, fast */
     @keyframes orbitDash1 {
-      from { transform: rotate(0deg) translateX(70px) rotate(0deg); }
-      to   { transform: rotate(360deg) translateX(70px) rotate(-360deg); }
+      from { transform: rotate(0deg) translateX(38px) rotate(0deg); }
+      to   { transform: rotate(360deg) translateX(38px) rotate(-360deg); }
     }
-
+    /* Earth-like */
     @keyframes orbitDash2 {
-      from { transform: rotate(180deg) translateX(100px) rotate(-180deg); }
-      to   { transform: rotate(540deg) translateX(100px) rotate(-540deg); }
+      from { transform: rotate(120deg) translateX(58px) rotate(-120deg); }
+      to   { transform: rotate(480deg) translateX(58px) rotate(-480deg); }
     }
-
+    /* Mars-like */
     @keyframes orbitDash3 {
-      from { transform: rotate(90deg) translateX(100px) rotate(-90deg); }
-      to   { transform: rotate(450deg) translateX(100px) rotate(-450deg); }
+      from { transform: rotate(200deg) translateX(80px) rotate(-200deg); }
+      to   { transform: rotate(560deg) translateX(80px) rotate(-560deg); }
+    }
+    /* Gas giant (Saturn-like) */
+    @keyframes orbitDash4a {
+      from { transform: rotate(45deg) translateX(108px) rotate(-45deg); }
+      to   { transform: rotate(405deg) translateX(108px) rotate(-405deg); }
+    }
+    /* Ice giant – shares orbit 4 radius, opposite start */
+    @keyframes orbitDash4b {
+      from { transform: rotate(225deg) translateX(108px) rotate(-225deg); }
+      to   { transform: rotate(585deg) translateX(108px) rotate(-585deg); }
+    }
+    /* Distant icy planet */
+    @keyframes orbitDash5 {
+      from { transform: rotate(160deg) translateX(138px) rotate(-160deg); }
+      to   { transform: rotate(520deg) translateX(138px) rotate(-520deg); }
+    }
+    /* Moon orbiting Earth */
+    @keyframes moonOrbit {
+      from { transform: rotate(0deg) translateX(8px) rotate(0deg); }
+      to   { transform: rotate(360deg) translateX(8px) rotate(-360deg); }
+    }
+    /* Sun corona breathing */
+    @keyframes sunPulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50%      { opacity: 0.65; transform: scale(1.06); }
+    }
+    /* Inner glow pulse – offset phase */
+    @keyframes sunGlowPulse {
+      0%, 100% { opacity: 0.45; transform: scale(1); }
+      50%      { opacity: 0.7; transform: scale(1.04); }
+    }
+    /* Star twinkle */
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.25; }
+      50%      { opacity: 0.8; }
     }
     /* ── Log drawer ─────────────────────────── */
 
@@ -1823,8 +1859,9 @@
           <div class="dashboard-placeholder" id="dashboardPlaceholder">
             <div class="dashboard-placeholder-inner">
               <div class="solar-system" aria-hidden="true">
-                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <defs>
+                    <!-- Sun gradients -->
                     <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
                       <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.3"/>
                       <stop offset="50%" stop-color="#d97706" stop-opacity="0.1"/>
@@ -1835,20 +1872,109 @@
                       <stop offset="40%" stop-color="#fbbf24"/>
                       <stop offset="100%" stop-color="#d97706"/>
                     </radialGradient>
+                    <radialGradient id="sunCorona" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.18"/>
+                      <stop offset="40%" stop-color="#f59e0b" stop-opacity="0.06"/>
+                      <stop offset="100%" stop-color="#05060d" stop-opacity="0"/>
+                    </radialGradient>
+                    <!-- Planet gradients (highlight at 35%/35% for 3D sphere) -->
+                    <radialGradient id="planet1" cx="35%" cy="35%" r="60%">
+                      <stop offset="0%" stop-color="#fcd34d"/>
+                      <stop offset="100%" stop-color="#92400e"/>
+                    </radialGradient>
+                    <radialGradient id="planet2" cx="35%" cy="35%" r="60%">
+                      <stop offset="0%" stop-color="#93c5fd"/>
+                      <stop offset="100%" stop-color="#1e40af"/>
+                    </radialGradient>
+                    <radialGradient id="planet3" cx="35%" cy="35%" r="60%">
+                      <stop offset="0%" stop-color="#fda4af"/>
+                      <stop offset="100%" stop-color="#b91c1c"/>
+                    </radialGradient>
+                    <radialGradient id="planet4" cx="35%" cy="35%" r="60%">
+                      <stop offset="0%" stop-color="#ddd6fe"/>
+                      <stop offset="100%" stop-color="#6d28d9"/>
+                    </radialGradient>
+                    <radialGradient id="planet5" cx="35%" cy="35%" r="60%">
+                      <stop offset="0%" stop-color="#a7f3d0"/>
+                      <stop offset="100%" stop-color="#047857"/>
+                    </radialGradient>
+                    <radialGradient id="planet6" cx="35%" cy="35%" r="60%">
+                      <stop offset="0%" stop-color="#c7d2fe"/>
+                      <stop offset="100%" stop-color="#3730a3"/>
+                    </radialGradient>
                   </defs>
-                  <circle cx="100" cy="100" r="95" fill="url(#sunGlow)"/>
-                  <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(251,191,36,0.12)" stroke-width="0.8" stroke-dasharray="3 5"/>
-                  <circle cx="100" cy="100" r="100" fill="none" stroke="rgba(183,133,255,0.12)" stroke-width="0.8" stroke-dasharray="3 5"/>
-                  <circle cx="100" cy="100" r="36" fill="url(#sunGlow)" opacity="0.5"/>
-                  <circle cx="100" cy="100" r="28" fill="url(#sunBody)"/>
-                  <g style="transform-origin: 100px 100px; animation: orbitDash1 8s linear infinite;">
-                    <circle cx="170" cy="100" r="7" fill="#6ea8ff"/>
+
+                  <!-- Background stars -->
+                  <circle cx="18" cy="25" r="0.6" fill="#f4f5fb" opacity="0.5"/>
+                  <circle cx="275" cy="18" r="0.8" fill="#f4f5fb" opacity="0.4" style="animation: twinkle 3s ease-in-out infinite;"/>
+                  <circle cx="40" cy="270" r="0.5" fill="#c7d2fe" opacity="0.45"/>
+                  <circle cx="260" cy="265" r="0.7" fill="#f4f5fb" opacity="0.35" style="animation: twinkle 4s ease-in-out 1s infinite;"/>
+                  <circle cx="12" cy="140" r="0.4" fill="#f4f5fb" opacity="0.5"/>
+                  <circle cx="288" cy="90" r="0.9" fill="#ddd6fe" opacity="0.3" style="animation: twinkle 3.5s ease-in-out 2s infinite;"/>
+                  <circle cx="55" cy="12" r="0.5" fill="#f4f5fb" opacity="0.4"/>
+                  <circle cx="240" cy="42" r="0.4" fill="#f4f5fb" opacity="0.35"/>
+                  <circle cx="28" cy="200" r="0.6" fill="#c7d2fe" opacity="0.3"/>
+                  <circle cx="272" cy="185" r="0.5" fill="#f4f5fb" opacity="0.45"/>
+                  <circle cx="145" cy="8" r="0.7" fill="#f4f5fb" opacity="0.3"/>
+                  <circle cx="160" cy="290" r="0.5" fill="#ddd6fe" opacity="0.35"/>
+
+                  <!-- Sun: corona (animated) -->
+                  <circle cx="150" cy="150" r="120" fill="url(#sunCorona)" style="transform-origin: 150px 150px; animation: sunPulse 4s ease-in-out infinite;"/>
+                  <!-- Sun: glow (animated, offset phase) -->
+                  <circle cx="150" cy="150" r="50" fill="url(#sunGlow)" style="transform-origin: 150px 150px; animation: sunGlowPulse 3s ease-in-out 1.5s infinite;"/>
+                  <!-- Sun: body -->
+                  <circle cx="150" cy="150" r="22" fill="url(#sunBody)"/>
+                  <!-- Sun: hot spot -->
+                  <circle cx="143" cy="143" r="8" fill="white" opacity="0.08"/>
+
+                  <!-- Orbit rings -->
+                  <circle cx="150" cy="150" r="38" fill="none" stroke="rgba(251,191,36,0.15)" stroke-width="0.5" stroke-dasharray="2 6"/>
+                  <circle cx="150" cy="150" r="58" fill="none" stroke="rgba(251,191,36,0.12)" stroke-width="0.5" stroke-dasharray="3 5"/>
+                  <ellipse cx="150" cy="150" rx="80" ry="74" fill="none" stroke="rgba(183,133,255,0.10)" stroke-width="0.5" stroke-dasharray="3 7" transform="rotate(-12 150 150)"/>
+                  <circle cx="150" cy="150" r="108" fill="none" stroke="rgba(96,165,250,0.08)" stroke-width="0.5" stroke-dasharray="4 6"/>
+                  <circle cx="150" cy="150" r="138" fill="none" stroke="rgba(96,165,250,0.06)" stroke-width="0.5" stroke-dasharray="2 8"/>
+
+                  <!-- Asteroid belt -->
+                  <circle cx="150" cy="150" r="93" fill="none" stroke="rgba(148,163,184,0.08)" stroke-width="3" stroke-dasharray="1 4 2 5 1 7"/>
+
+                  <!-- Planet 6: Distant icy (outermost, rendered first) -->
+                  <g style="transform-origin: 150px 150px; animation: orbitDash5 30s linear infinite;">
+                    <circle cx="150" cy="150" r="6" fill="rgba(199,210,254,0.12)"/>
+                    <circle cx="150" cy="150" r="3" fill="url(#planet6)"/>
                   </g>
-                  <g style="transform-origin: 100px 100px; animation: orbitDash2 12s linear infinite;">
-                    <circle cx="200" cy="100" r="6" fill="#b785ff"/>
+
+                  <!-- Planet 5: Ice giant -->
+                  <g style="transform-origin: 150px 150px; animation: orbitDash4b 22s linear infinite;">
+                    <circle cx="150" cy="150" r="9" fill="rgba(167,243,208,0.12)"/>
+                    <circle cx="150" cy="150" r="4.5" fill="url(#planet5)"/>
                   </g>
-                  <g style="transform-origin: 100px 100px; animation: orbitDash3 15s linear infinite;">
-                    <circle cx="200" cy="100" r="5" fill="#5af2c7"/>
+
+                  <!-- Planet 4: Gas giant (Saturn-like with ring) -->
+                  <g style="transform-origin: 150px 150px; animation: orbitDash4a 18s linear infinite;">
+                    <circle cx="150" cy="150" r="16" fill="rgba(221,214,254,0.10)"/>
+                    <circle cx="150" cy="150" r="8" fill="url(#planet4)"/>
+                    <ellipse cx="150" cy="150" rx="13" ry="3" fill="none" stroke="rgba(221,214,254,0.5)" stroke-width="1.2" transform="rotate(-20 150 150)"/>
+                  </g>
+
+                  <!-- Planet 3: Mars-like -->
+                  <g style="transform-origin: 150px 150px; animation: orbitDash3 12s linear infinite;">
+                    <circle cx="150" cy="150" r="8" fill="rgba(253,164,175,0.12)"/>
+                    <circle cx="150" cy="150" r="4" fill="url(#planet3)"/>
+                  </g>
+
+                  <!-- Planet 2: Earth-like (with moon) -->
+                  <g style="transform-origin: 150px 150px; animation: orbitDash2 8s linear infinite;">
+                    <circle cx="150" cy="150" r="10" fill="rgba(147,197,253,0.12)"/>
+                    <circle cx="150" cy="150" r="5" fill="url(#planet2)"/>
+                    <g style="transform-origin: 150px 150px; animation: moonOrbit 2s linear infinite;">
+                      <circle cx="150" cy="150" r="1.5" fill="#d1d5db"/>
+                    </g>
+                  </g>
+
+                  <!-- Planet 1: Mercury (innermost) -->
+                  <g style="transform-origin: 150px 150px; animation: orbitDash1 5s linear infinite;">
+                    <circle cx="150" cy="150" r="7" fill="rgba(252,211,77,0.12)"/>
+                    <circle cx="150" cy="150" r="3.5" fill="url(#planet1)"/>
                   </g>
                 </svg>
               </div>
