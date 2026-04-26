@@ -399,7 +399,7 @@ def _build_footer_section(total_count: int, type_counts: dict[str, int]) -> None
     with Column(gap=3, align="center", css_class="py-4 opacity-75"):
         with Row(gap=2, align="center"):
             Dot(variant="success", size="sm")
-            Small("Built with Prefab UI")
+            H2("Built with Prefab UI")
         Muted(f"Generated {timestamp}")
         Muted(f"{total_count} components \u00b7 {len(sorted_types)} types")
         with Row(gap=1, css_class="flex-wrap", justify="center"):
