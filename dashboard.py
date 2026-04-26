@@ -105,6 +105,12 @@ def build_dashboard(
         total, type_counts = _count_components(view)
         _build_footer_section(total, type_counts)
 
+        # Move footer (Separator + Column) to the very top of the dashboard
+        footer_col = view.children.pop()
+        footer_sep = view.children.pop()
+        view.children.insert(0, footer_sep)
+        view.children.insert(1, footer_col)
+
     logger.debug("build_dashboard_done")
     return PrefabApp(
         title="CosmoLog",
