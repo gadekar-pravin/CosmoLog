@@ -567,79 +567,88 @@
 
     .orbit-anim {
       position: relative;
-      width: 140px;
-      height: 140px;
+      width: 260px;
+      height: 260px;
+    }
+
+    .orbit-anim::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(110,168,255,0.18) 0%, rgba(183,133,255,0.10) 40%, transparent 70%);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
     }
 
     .orbit-anim .orbit-ring {
       position: absolute;
       border-radius: 50%;
-      border: 1px solid;
+      border: 1px dashed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
     }
 
     .orbit-anim .orbit-ring-1 {
-      width: 100px;
-      height: 100px;
-      border-color: rgba(110, 168, 255, 0.2);
+      width: 180px;
+      height: 180px;
+      border-color: rgba(110, 168, 255, 0.15);
     }
 
     .orbit-anim .orbit-ring-2 {
-      width: 140px;
-      height: 140px;
-      border-color: rgba(183, 133, 255, 0.15);
+      width: 250px;
+      height: 250px;
+      border-color: rgba(183, 133, 255, 0.10);
     }
 
     .orbit-anim .planet-core {
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 24px;
-      height: 24px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--cosmic-blue), var(--nebula-purple));
-      box-shadow: 0 0 24px rgba(110, 168, 255, 0.4);
+      background: rgba(220, 225, 240, 0.9);
+      box-shadow: 0 0 16px rgba(183, 133, 255, 0.3);
       transform: translate(-50%, -50%);
     }
 
     .orbit-anim .orbit-dot {
       position: absolute;
-      width: 8px;
-      height: 8px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       top: 50%;
       left: 50%;
     }
 
     .orbit-anim .orbit-dot-1 {
-      background: var(--cosmic-blue);
-      box-shadow: 0 0 10px rgba(110, 168, 255, 0.6);
+      background: rgba(220, 225, 240, 0.7);
+      box-shadow: 0 0 8px rgba(200, 210, 230, 0.4);
       animation: orbitChat1 6s linear infinite;
     }
 
     .orbit-anim .orbit-dot-2 {
-      background: var(--nebula-purple);
-      box-shadow: 0 0 10px rgba(183, 133, 255, 0.6);
-      width: 6px;
-      height: 6px;
-      animation: orbitChat2 9s linear infinite;
+      display: none;
     }
 
     .empty-chat-title {
       color: #f8fafc;
-      font-size: 1.1rem;
-      font-weight: 600;
+      font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+      font-weight: 500;
       margin: 0;
     }
 
     .empty-chat-sub {
       color: var(--muted);
-      font-size: 0.86rem;
-      line-height: 1.5;
+      font-size: 0.92rem;
+      line-height: 1.55;
       margin: 4px 0 0;
-      max-width: 300px;
+      max-width: 340px;
     }
 
     /* ── Event cards ───────────────────────── */
@@ -977,8 +986,8 @@
 
     .solar-system {
       position: relative;
-      width: min(280px, 54vw);
-      height: min(280px, 54vw);
+      width: min(400px, 70vw);
+      height: min(400px, 70vw);
     }
 
     .solar-system svg {
@@ -988,7 +997,7 @@
 
     .dashboard-hero-title {
       margin: 0;
-      font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
       font-weight: 500;
       color: #f8fafc;
       max-width: 520px;
@@ -997,13 +1006,16 @@
     }
 
     .dashboard-hero-title .highlight {
-      color: var(--accent-green);
+      background: linear-gradient(135deg, var(--cosmic-blue), var(--nebula-purple));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .dashboard-hero-sub {
       margin: 6px 0 0;
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 1rem;
       line-height: 1.6;
       max-width: 460px;
     }
@@ -1504,28 +1516,28 @@
     }
 
     @keyframes orbitChat1 {
-      from { transform: translate(-50%, -50%) rotate(0deg) translateX(50px) rotate(0deg); }
-      to   { transform: translate(-50%, -50%) rotate(360deg) translateX(50px) rotate(-360deg); }
+      from { transform: translate(-50%, -50%) rotate(0deg) translateX(90px) rotate(0deg); }
+      to   { transform: translate(-50%, -50%) rotate(360deg) translateX(90px) rotate(-360deg); }
     }
 
     @keyframes orbitChat2 {
-      from { transform: translate(-50%, -50%) rotate(0deg) translateX(70px) rotate(0deg); }
-      to   { transform: translate(-50%, -50%) rotate(360deg) translateX(70px) rotate(-360deg); }
+      from { transform: translate(-50%, -50%) rotate(0deg) translateX(125px) rotate(0deg); }
+      to   { transform: translate(-50%, -50%) rotate(360deg) translateX(125px) rotate(-360deg); }
     }
 
     @keyframes orbitDash1 {
-      from { transform: rotate(0deg) translateX(60px) rotate(0deg); }
-      to   { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+      from { transform: rotate(0deg) translateX(70px) rotate(0deg); }
+      to   { transform: rotate(360deg) translateX(70px) rotate(-360deg); }
     }
 
     @keyframes orbitDash2 {
-      from { transform: rotate(180deg) translateX(85px) rotate(-180deg); }
-      to   { transform: rotate(540deg) translateX(85px) rotate(-540deg); }
+      from { transform: rotate(180deg) translateX(100px) rotate(-180deg); }
+      to   { transform: rotate(540deg) translateX(100px) rotate(-540deg); }
     }
 
     @keyframes orbitDash3 {
-      from { transform: rotate(90deg) translateX(85px) rotate(-90deg); }
-      to   { transform: rotate(450deg) translateX(85px) rotate(-450deg); }
+      from { transform: rotate(90deg) translateX(100px) rotate(-90deg); }
+      to   { transform: rotate(450deg) translateX(100px) rotate(-450deg); }
     }
     /* ── Log drawer ─────────────────────────── */
 
@@ -1753,7 +1765,7 @@
               </div>
               <div>
                 <h3 class="empty-chat-title">Awaiting your transmission</h3>
-                <p class="empty-chat-sub">Ask for NASA data, journal changes, or a dashboard refresh.</p>
+                <p class="empty-chat-sub">Ask CosmoLog to fetch NASA data, log to your space journal, or render a live dashboard.</p>
               </div>
             </div>
           </div>
@@ -1814,32 +1826,35 @@
                 <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stop-color="#6ea8ff" stop-opacity="0.35"/>
+                      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.3"/>
+                      <stop offset="50%" stop-color="#d97706" stop-opacity="0.1"/>
                       <stop offset="100%" stop-color="#05060d" stop-opacity="0"/>
                     </radialGradient>
-                    <linearGradient id="brandGrad2" x1="84" y1="84" x2="116" y2="116">
-                      <stop stop-color="#6ea8ff"/>
-                      <stop offset="1" stop-color="#b785ff"/>
-                    </linearGradient>
+                    <radialGradient id="sunBody" cx="40%" cy="40%" r="55%">
+                      <stop offset="0%" stop-color="#fef3c7"/>
+                      <stop offset="40%" stop-color="#fbbf24"/>
+                      <stop offset="100%" stop-color="#d97706"/>
+                    </radialGradient>
                   </defs>
-                  <circle cx="100" cy="100" r="90" fill="url(#sunGlow)"/>
-                  <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(110,168,255,0.2)" stroke-width="0.8" stroke-dasharray="3 5"/>
-                  <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(183,133,255,0.15)" stroke-width="0.8" stroke-dasharray="3 5"/>
-                  <circle cx="100" cy="100" r="16" fill="url(#brandGrad2)"/>
+                  <circle cx="100" cy="100" r="95" fill="url(#sunGlow)"/>
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(251,191,36,0.12)" stroke-width="0.8" stroke-dasharray="3 5"/>
+                  <circle cx="100" cy="100" r="100" fill="none" stroke="rgba(183,133,255,0.12)" stroke-width="0.8" stroke-dasharray="3 5"/>
+                  <circle cx="100" cy="100" r="36" fill="url(#sunGlow)" opacity="0.5"/>
+                  <circle cx="100" cy="100" r="28" fill="url(#sunBody)"/>
                   <g style="transform-origin: 100px 100px; animation: orbitDash1 8s linear infinite;">
-                    <circle cx="160" cy="100" r="5" fill="#5af2c7"/>
+                    <circle cx="170" cy="100" r="7" fill="#6ea8ff"/>
                   </g>
                   <g style="transform-origin: 100px 100px; animation: orbitDash2 12s linear infinite;">
-                    <circle cx="185" cy="100" r="4" fill="#6ea8ff"/>
+                    <circle cx="200" cy="100" r="6" fill="#b785ff"/>
                   </g>
                   <g style="transform-origin: 100px 100px; animation: orbitDash3 15s linear infinite;">
-                    <circle cx="185" cy="100" r="3.5" fill="#b785ff"/>
+                    <circle cx="200" cy="100" r="5" fill="#5af2c7"/>
                   </g>
                 </svg>
               </div>
               <div>
                 <h3 class="dashboard-hero-title">Your <span class="highlight">dashboard</span> renders the moment data arrives.</h3>
-                <p class="dashboard-hero-sub">The agent streams a live Prefab UI dashboard here as soon as it fetches NASA data.</p>
+                <p class="dashboard-hero-sub">CosmoLog streams Prefab dashboards into this stage as soon as the agent finishes a tool run. Try a sample mission, or send a request from chat.</p>
               </div>
               <div class="kbd-hint">Try <kbd id="kbdKey">&#8984;K</kbd> to focus chat</div>
             </div>
