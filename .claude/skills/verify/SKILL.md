@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Run linting and tests to verify the codebase is correct. Use after making changes or before committing.
+description: Run linting and tests to verify the codebase is correct. Use only before committing.
 ---
 
 Run the following commands in sequence. Stop at the first failure and report what went wrong.

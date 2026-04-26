@@ -11,8 +11,9 @@ import agent
 
 
 @pytest.fixture(autouse=True)
-def clear_conversation_history() -> None:
+def clear_conversation_state() -> None:
     agent.conversation_history.clear()
+    agent._last_fetch_result = None
 
 
 def _parse_sse(body: str) -> list[dict[str, Any]]:
@@ -190,3 +191,69 @@ async def test_chat_rejects_blank_message():
         response = await client.post("/chat", json={"message": "   "})
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_correlation_id_header_on_health():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=agent.app),
+        base_url="http://test",
+    ) as client:
+        response = await client.get("/health")
+
+    cid = response.headers.get("x-correlation-id")
+    assert cid is not None
+    assert len(cid) == 8
+    assert all(c in "0123456789abcdef" for c in cid)
+
+
+@pytest.mark.asyncio
+async def test_correlation_id_header_on_delete(monkeypatch):
+    monkeypatch.setattr(agent, "manage_space_journal", lambda **kw: {"status": "ok"})
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=agent.app),
+        base_url="http://test",
+    ) as client:
+        response = await client.delete("/api/journal/test-id")
+
+    assert response.headers.get("x-correlation-id") is not None
+
+
+@pytest.mark.asyncio
+async def test_correlation_ids_are_unique():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=agent.app),
+        base_url="http://test",
+    ) as client:
+        r1 = await client.get("/health")
+        r2 = await client.get("/health")
+
+    assert r1.headers["x-correlation-id"] != r2.headers["x-correlation-id"]
+
+
+@pytest.mark.asyncio
+async def test_correlation_id_header_on_chat(monkeypatch):
+    monkeypatch.setattr(agent, "agent_loop", _fake_agent_loop)
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=agent.app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/chat", json={"message": "hi"})
+
+    assert response.headers.get("x-correlation-id") is not None
+
+
+@pytest.mark.asyncio
+async def test_reset_clears_fetch_cache():
+    agent._last_fetch_result = {"apod": {"title": "cached"}}
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=agent.app),
+        base_url="http://test",
+    ) as client:
+        response = await client.post("/reset")
+
+    assert response.status_code == 200
+    assert agent._last_fetch_result is None

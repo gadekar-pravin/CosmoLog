@@ -9,7 +9,7 @@ from collections.abc import AsyncGenerator, Callable
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from google import genai
@@ -41,6 +41,17 @@ app = FastAPI(title="CosmoLog AI Agent")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 conversation_history: list[types.Content] = []
+
+_last_fetch_result: dict[str, Any] | None = None
+
+
+@app.middleware("http")
+async def correlation_id_middleware(request: Request, call_next):
+    cid = uuid.uuid4().hex[:8]
+    set_correlation_id(cid)
+    response = await call_next(request)
+    response.headers["X-Correlation-ID"] = cid
+    return response
 
 
 class ChatRequest(BaseModel):
@@ -242,17 +253,61 @@ def _part_function_call(part: Any) -> Any | None:
     return function_call if function_call else None
 
 
+def _is_journal_read_request(message: str) -> bool:
+    normalized = " ".join(message.lower().strip().split()).rstrip(".?!")
+    if "journal" not in normalized:
+        return False
+
+    mutating_or_fetching_terms = (
+        "add",
+        "apod",
+        "asteroid",
+        "create",
+        "delete",
+        "fetch",
+        "nasa",
+        "neo",
+        "remove",
+        "rover",
+        "save",
+        "update",
+    )
+    if any(term in normalized for term in mutating_or_fetching_terms):
+        return False
+
+    return any(
+        phrase in normalized
+        for phrase in (
+            "display",
+            "read",
+            "show",
+            "what is in",
+            "what's in",
+        )
+    )
+
+
 def _dispatch_tool(name: str, args: dict[str, Any]) -> tuple[Any, str | None]:
+    global _last_fetch_result
     tool = TOOL_REGISTRY.get(name)
     if tool is None:
         logger.warning("unknown_tool name=%s", name)
         return {"status": "error", "message": f"Unknown tool: {name}"}, None
 
     coerced_args = _coerce_tool_args(name, args)
+
+    if name == "show_space_dashboard" and _last_fetch_result is not None:
+        logger.info("cache_inject replacing space_data with cached fetch result")
+        coerced_args["space_data"] = _last_fetch_result
+
     logger.info("tool_dispatch name=%s args=%s", name, _truncate(coerced_args))
     t0 = time.perf_counter()
     try:
         result = tool(**coerced_args)
+
+        if name == "fetch_space_data":
+            _last_fetch_result = _serialize_result(result)
+
         duration_ms = (time.perf_counter() - t0) * 1000
         if name == "show_space_dashboard":
             html = result.html()
@@ -277,6 +332,59 @@ def _dispatch_tool(name: str, args: dict[str, Any]) -> tuple[Any, str | None]:
         return {"status": "error", "message": str(exc)}, None
 
 
+async def _journal_read_shortcut() -> AsyncGenerator[dict[str, Any], None]:
+    yield {
+        "type": "thinking",
+        "data": {"text": "I'll read your space journal and render the dashboard."},
+    }
+
+    read_args = {"operation": "read"}
+    yield {"type": "tool_call", "data": {"name": "manage_space_journal", "args": read_args}}
+    journal_result, _ = _dispatch_tool("manage_space_journal", read_args)
+    yield {
+        "type": "tool_result",
+        "data": {"name": "manage_space_journal", "result": journal_result},
+    }
+
+    journal_entries = []
+    if isinstance(journal_result, dict):
+        entries = journal_result.get("entries")
+        if isinstance(entries, list):
+            journal_entries = entries
+
+    dashboard_args = {"journal_entries": journal_entries}
+    yield {
+        "type": "tool_call",
+        "data": {"name": "show_space_dashboard", "args": dashboard_args},
+    }
+    dashboard_result, dashboard_html = _dispatch_tool("show_space_dashboard", dashboard_args)
+    yield {
+        "type": "tool_result",
+        "data": {"name": "show_space_dashboard", "result": dashboard_result},
+    }
+
+    if dashboard_html is not None:
+        yield {"type": "dashboard", "data": {"html": dashboard_html}}
+
+    if isinstance(journal_result, dict) and journal_result.get("status") == "error":
+        message = journal_result.get("message", "unknown error")
+        text = f"I couldn't read your space journal: {message}."
+    elif journal_entries:
+        entry_word = "entry" if len(journal_entries) == 1 else "entries"
+        pronoun = "it" if len(journal_entries) == 1 else "them"
+        text = (
+            f"Your space journal has {len(journal_entries)} {entry_word}. "
+            f"I rendered {pronoun} on the dashboard."
+        )
+    else:
+        text = (
+            "There are no entries in your space journal yet. "
+            "I rendered the dashboard with the current journal state."
+        )
+
+    yield {"type": "text", "data": {"text": text}}
+
+
 async def agent_loop(
     message: str,
     history: list[types.Content],
@@ -288,6 +396,12 @@ async def agent_loop(
 
     iteration = 0
     try:
+        if _is_journal_read_request(message):
+            logger.info("journal_read_shortcut message_len=%d", len(message))
+            async for event in _journal_read_shortcut():
+                yield event
+            return
+
         client = _get_gemini_client()
 
         for iteration in range(1, MAX_ITERATIONS + 1):
@@ -405,9 +519,7 @@ async def root() -> FileResponse:
 
 @app.post("/chat")
 async def chat(request: ChatRequest) -> EventSourceResponse:
-    cid = uuid.uuid4().hex[:8]
-    set_correlation_id(cid)
-    logger.info("chat_request correlation_id=%s message_len=%d", cid, len(request.message))
+    logger.info("chat_request message_len=%d", len(request.message))
     return EventSourceResponse(_sse_event_stream(request.message))
 
 
@@ -423,7 +535,9 @@ async def delete_journal_entry(entry_id: str) -> dict[str, str]:
 
 @app.post("/reset")
 async def reset() -> dict[str, str]:
+    global _last_fetch_result
     conversation_history.clear()
+    _last_fetch_result = None
     logger.info("conversation_reset")
     return {"status": "ok"}
 

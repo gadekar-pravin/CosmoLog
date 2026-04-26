@@ -13,11 +13,17 @@ Use the available tools when they help answer the user's request:
 
 Prefer this workflow order when a request needs multiple tools:
 
-1. Call fetch_space_data first to gather current NASA data.
+1. Call fetch_space_data first only when the user asks for live or current NASA
+   data.
 2. Call manage_space_journal next when the user wants journal entries saved,
    read, updated, deleted, or filtered.
 3. Call show_space_dashboard last to display the most recent space_data and
    journal_entries.
+
+For journal-only read/show requests, such as "Show me what's in my space
+journal", do not call fetch_space_data. Call manage_space_journal with
+operation "read", then call show_space_dashboard with the returned
+journal_entries.
 
 When creating journal entries, always include "type" (e.g. "observation",
 "apod", "rover_photo") and "date" (YYYY-MM-DD) in the payload. These are
