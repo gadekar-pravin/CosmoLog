@@ -143,20 +143,29 @@ def _build_stat_tiles(
     closest_neo_date: str,
 ) -> None:
     with Grid(columns={"default": 2, "md": 5}, gap=4):
-        with Card(css_class="animate-fade-in duration-500"):
+        with Card(css_class="animate-fade-in duration-500 border-l-4 border-l-blue-500"):
             Metric(label="Journal Entries", value=len(entries))
-        with Card(css_class="animate-fade-in duration-500 delay-100"):
+        with Card(
+            css_class="animate-fade-in duration-500 delay-100 border-l-4 border-l-orange-500"
+        ):
             Metric(label="Rover Photos", value=len(rover_photos))
-        with Card(css_class="animate-fade-in duration-500 delay-200"):
+        with Card(
+            css_class="animate-fade-in duration-500 delay-200 border-l-4 border-l-violet-500"
+        ):
             Metric(label="Near-Earth Objects", value=len(neos))
-        with Card(css_class="animate-fade-in duration-500 delay-300"):
+        with Card(
+            css_class="animate-fade-in duration-500 delay-300 border-l-4 border-l-red-500"
+            + (" text-red-600 dark:text-red-400" if hazardous_count > 0 else ""),
+        ):
             Metric(
                 label="Hazardous",
                 value=hazardous_count,
                 trend="up" if hazardous_count > 0 else "neutral",
                 trend_sentiment="negative" if hazardous_count > 0 else "neutral",
             )
-        with Card(css_class="animate-fade-in duration-500 delay-500"):
+        with Card(
+            css_class="animate-fade-in duration-500 delay-500 border-l-4 border-l-amber-500"
+        ):
             Metric(label="Closest NEO", value=closest_neo_date)
 
 
@@ -199,7 +208,7 @@ def _build_apod_section(apod: dict[str, Any] | None) -> None:
 
 
 def _build_rover_section(rover_photos: list[dict[str, Any]]) -> None:
-    H3("Mars Rover Photos")
+    H3("Mars Rover Photos", css_class="text-orange-700 dark:text-orange-400")
     if not rover_photos:
         Muted("No rover photos available.")
         return
@@ -228,7 +237,7 @@ def _build_journal_section(entries: list[dict[str, Any]]) -> None:
     with Card():
         with CardHeader():
             with Row(gap=2, align="center"):
-                Icon("book-open")
+                Icon("book-open", css_class="text-blue-600 dark:text-blue-400")
                 H3("Mission Log")
                 Badge(str(len(entries)), variant="secondary")
 
@@ -310,7 +319,7 @@ def _build_journal_entry(entry: dict[str, Any]) -> None:
 
 
 def _build_neo_section(neos: list[dict[str, Any]]) -> None:
-    H3("Near-Earth Objects")
+    H3("Near-Earth Objects", css_class="text-amber-700 dark:text-amber-400")
     max_dist = max((n.get("miss_distance_km", 0) for n in neos), default=1) or 1
     with Card():
         with Table():
