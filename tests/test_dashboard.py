@@ -16,14 +16,15 @@ IMAGE_SPACE_DATA = {
         "url": "https://apod.nasa.gov/image.jpg",
         "copyright": "Test Author",
     },
-    "rover_photos": [
+    "nasa_images": [
         {
-            "id": "12345",
-            "rover": "Curiosity",
-            "camera": "Navigation Camera",
-            "earth_date": "2026-04-20",
-            "sol": 4100,
-            "img_src": "https://mars.nasa.gov/photo.jpg",
+            "nasa_id": "PIA12345",
+            "title": "Curiosity Rover Self-Portrait",
+            "date_created": "2026-04-20",
+            "description": "A self-portrait of the Curiosity rover.",
+            "center": "JPL",
+            "img_src": "https://images-assets.nasa.gov/image/PIA12345/PIA12345~thumb.jpg",
+            "keywords": ["Mars", "Curiosity"],
         }
     ],
     "near_earth_objects": [
@@ -60,7 +61,7 @@ VIDEO_SPACE_DATA = {
         "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
         "thumbnail_url": "https://img.youtube.com/vi/dQw4w9WgXcQ/0.jpg",
     },
-    "rover_photos": [],
+    "nasa_images": [],
     "near_earth_objects": [],
     "errors": [],
 }
@@ -130,7 +131,7 @@ def test_build_dashboard_empty_data():
 
     assert isinstance(result, PrefabApp)
     assert "No APOD data available" in tree_str
-    assert "No rover photos available" in tree_str
+    assert "No NASA images available" in tree_str
     assert "No journal entries yet" in tree_str
 
 
@@ -315,7 +316,7 @@ def test_hazardous_badge_has_pulse_animation():
     assert all("animate-pulse" in (b.get("cssClass") or "") for b in hazardous)
 
 
-def test_rover_photos_use_carousel():
+def test_nasa_images_use_carousel():
     result = build_dashboard(space_data=IMAGE_SPACE_DATA)
     tree = result.to_json()
 

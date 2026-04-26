@@ -88,24 +88,23 @@ def _object_schema(
 FUNCTION_DECLARATIONS: list[types.FunctionDeclaration] = [
     types.FunctionDeclaration(
         name="fetch_space_data",
-        description="Fetch live NASA space data: APOD, Mars rover photos, and near-Earth objects.",
+        description="Fetch live NASA space data: APOD, NASA images, and near-Earth objects.",
         parameters=_object_schema(
             {
                 "date": types.Schema(
                     type=types.Type.STRING,
                     description="Date for APOD lookup (YYYY-MM-DD). Defaults to today.",
                 ),
-                "rover": types.Schema(
+                "image_query": types.Schema(
                     type=types.Type.STRING,
-                    description="Mars rover name. Defaults to curiosity.",
+                    description=(
+                        "Search query for NASA images."
+                        " If omitted, a random visually compelling query is used."
+                    ),
                 ),
-                "sol": types.Schema(
+                "image_count": types.Schema(
                     type=types.Type.INTEGER,
-                    description="Martian sol for rover photos. Defaults to latest available.",
-                ),
-                "photo_count": types.Schema(
-                    type=types.Type.INTEGER,
-                    description="Number of rover photos to return. Defaults to 3.",
+                    description="Number of images to return. Defaults to 3.",
                 ),
                 "neo_days": types.Schema(
                     type=types.Type.INTEGER,
@@ -222,7 +221,7 @@ def _get_gemini_client() -> genai.Client:
 def _coerce_tool_args(name: str, args: dict[str, Any]) -> dict[str, Any]:
     coerced = dict(args)
     if name == "fetch_space_data":
-        for key in ("sol", "photo_count", "neo_days", "neo_count"):
+        for key in ("image_count", "neo_days", "neo_count"):
             value = coerced.get(key)
             if isinstance(value, float) and value.is_integer():
                 coerced[key] = int(value)

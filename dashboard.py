@@ -65,19 +65,19 @@ def build_dashboard(
     tag_filter: str | None = None,
 ) -> PrefabApp:
     """Build the CosmoLog Prefab dashboard from prepared data."""
-    rover_count = len(space_data.get("rover_photos", [])) if space_data else 0
+    image_count = len(space_data.get("nasa_images", [])) if space_data else 0
     neo_count = len(space_data.get("near_earth_objects", [])) if space_data else 0
     entry_count = len(journal_entries) if journal_entries else 0
     logger.info(
-        "build_dashboard apod=%s rover_count=%d neo_count=%d entry_count=%d tag_filter=%s",
+        "build_dashboard apod=%s image_count=%d neo_count=%d entry_count=%d tag_filter=%s",
         bool(space_data and space_data.get("apod")),
-        rover_count,
+        image_count,
         neo_count,
         entry_count,
         tag_filter,
     )
     apod = space_data.get("apod") if space_data else None
-    rover_photos = space_data.get("rover_photos", []) if space_data else []
+    nasa_images = space_data.get("nasa_images", []) if space_data else []
     neos = space_data.get("near_earth_objects", []) if space_data else []
     entries = journal_entries or []
 
@@ -89,12 +89,12 @@ def build_dashboard(
 
     with Column(gap=6, css_class="p-6") as view:
         _build_header(tag_filter)
-        _build_stat_tiles(entries, rover_photos, neos, hazardous_count, closest_neo_date)
+        _build_stat_tiles(entries, nasa_images, neos, hazardous_count, closest_neo_date)
 
         with Grid(columns=[2, 1], gap=6):
             with Column(gap=6):
                 _build_apod_section(apod)
-                _build_rover_section(rover_photos)
+                _build_images_section(nasa_images)
 
             _build_journal_section(entries)
 
@@ -137,7 +137,7 @@ def _build_header(tag_filter: str | None) -> None:
 
 def _build_stat_tiles(
     entries: list[dict[str, Any]],
-    rover_photos: list[dict[str, Any]],
+    nasa_images: list[dict[str, Any]],
     neos: list[dict[str, Any]],
     hazardous_count: int,
     closest_neo_date: str,
@@ -148,7 +148,7 @@ def _build_stat_tiles(
         with Card(
             css_class="animate-fade-in duration-500 delay-100 border-l-4 border-l-orange-500"
         ):
-            Metric(label="Rover Photos", value=len(rover_photos))
+            Metric(label="NASA Images", value=len(nasa_images))
         with Card(
             css_class="animate-fade-in duration-500 delay-200 border-l-4 border-l-violet-500"
         ):
@@ -207,10 +207,10 @@ def _build_apod_section(apod: dict[str, Any] | None) -> None:
                 Link("View on NASA", href=url, css_class="text-sm")
 
 
-def _build_rover_section(rover_photos: list[dict[str, Any]]) -> None:
-    H3("Mars Rover Photos", css_class="text-orange-700 dark:text-orange-400")
-    if not rover_photos:
-        Muted("No rover photos available.")
+def _build_images_section(nasa_images: list[dict[str, Any]]) -> None:
+    H3("NASA Imagery", css_class="text-orange-700 dark:text-orange-400")
+    if not nasa_images:
+        Muted("No NASA images available.")
         return
 
     with Carousel(
@@ -221,16 +221,16 @@ def _build_rover_section(rover_photos: list[dict[str, Any]]) -> None:
         pause_on_hover=True,
         css_class="animate-fade-in duration-500",
     ):
-        for photo in rover_photos:
+        for image in nasa_images:
             with Card():
                 Image(
-                    src=photo.get("img_src", ""),
-                    alt=f"{photo.get('rover', 'Rover')} - {photo.get('camera', 'Camera')}",
+                    src=image.get("img_src", ""),
+                    alt=image.get("title", "NASA Image"),
                     width="100%",
                 )
                 with CardContent():
-                    Text(photo.get("camera", "Unknown camera"), css_class="font-medium text-sm")
-                    Muted(f"Sol {photo.get('sol', 'N/A')} -- {photo.get('earth_date', 'N/A')}")
+                    Text(image.get("title", "Untitled"), css_class="font-medium text-sm")
+                    Muted(image.get("date_created", "N/A"))
 
 
 def _build_journal_section(entries: list[dict[str, Any]]) -> None:

@@ -17,15 +17,16 @@ class APODData(BaseModel):
     copyright: str | None = None
 
 
-class RoverPhoto(BaseModel):
-    """A single Mars rover photo."""
+class NASAImage(BaseModel):
+    """A single image from the NASA Image and Video Library."""
 
-    id: str
-    rover: str
-    camera: str
-    earth_date: str
-    sol: int
+    nasa_id: str
+    title: str
+    date_created: str
+    description: str = ""
+    center: str = ""
     img_src: str
+    keywords: list[str] = Field(default_factory=list)
 
 
 class NearEarthObject(BaseModel):
@@ -45,7 +46,7 @@ class SpaceData(BaseModel):
     """Composite result from all NASA APIs."""
 
     apod: APODData | None = None
-    rover_photos: list[RoverPhoto] = Field(default_factory=list)
+    nasa_images: list[NASAImage] = Field(default_factory=list)
     near_earth_objects: list[NearEarthObject] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
 

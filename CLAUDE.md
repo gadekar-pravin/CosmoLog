@@ -10,9 +10,9 @@ CosmoLog is a NASA Space Mission Journal Dashboard — an MCP application with 3
 
 ```
 mcp_server.py    — FastMCP server, tool definitions, entry point (`cosmolog` script)
-nasa_client.py   — httpx-based NASA API client (APOD, Mars Rover, NeoWs) with TTL cache
+nasa_client.py   — httpx-based NASA API client (APOD, NASA Image Library, NeoWs) with TTL cache
 journal.py       — Journal CRUD against space_journal.json (gitignored)
-models.py        — Pydantic v2 models: SpaceData, APODData, RoverPhoto, NearEarthObject, JournalEntry
+models.py        — Pydantic v2 models: SpaceData, APODData, NASAImage, NearEarthObject, JournalEntry
 dashboard.py     — Prefab UI dashboard builder (imported lazily from show_space_dashboard)
 ```
 
@@ -91,7 +91,10 @@ Always use `uv`, never `pip`.
 
 ## NASA API
 
-- `DEMO_KEY` is rate-limited to 30 req/hr — the `NASAClient` uses a 5-minute in-memory cache
+- `DEMO_KEY` is rate-limited to 30 req/hr for APOD and NeoWs — the `NASAClient` uses a 5-minute in-memory cache
+- NASA Image Library (`images-api.nasa.gov`) requires no API key and has no documented rate limits
+- The Mars Rover Photos API was archived (returns 404) and replaced with NASA Image Library
+- When no `image_query` is provided, the client picks a random query from `NASA_IMAGE_QUERIES` (a curated pool of 10 visually diverse topics) so each fetch shows different imagery
 - The client is module-level in `mcp_server.py` (not per-call) so the cache persists
 - `.env` file loaded via `python-dotenv` for `NASA_API_KEY`
 

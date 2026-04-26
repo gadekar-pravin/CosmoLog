@@ -25,36 +25,33 @@ _nasa_client = NASAClient(api_key=API_KEY)
 @mcp.tool()
 def fetch_space_data(
     date: str | None = None,
-    rover: str = "curiosity",
-    sol: int | None = None,
-    photo_count: int = 3,
+    image_query: str | None = None,
+    image_count: int = 3,
     neo_days: int = 7,
     neo_count: int = 10,
 ) -> dict[str, Any]:
-    """Fetch live NASA space data: APOD, Mars rover photos, and near-Earth objects.
+    """Fetch live NASA space data: APOD, NASA images, and near-Earth objects.
 
     Args:
         date: Date for APOD lookup (YYYY-MM-DD). Defaults to today.
-        rover: Mars rover name. Defaults to 'curiosity'.
-        sol: Martian sol for rover photos. Defaults to latest available.
-        photo_count: Number of rover photos to return. Defaults to 3.
+        image_query: Search query for NASA Image Library.
+            Defaults to a random selection from a curated pool.
+        image_count: Number of NASA images to return. Defaults to 3.
         neo_days: Number of days ahead to check for NEOs. Defaults to 7.
         neo_count: Maximum number of NEOs to return. Defaults to 10.
     """
     logger.info(
-        "fetch_space_data date=%s rover=%s sol=%s photo_count=%d neo_days=%d neo_count=%d",
+        "fetch_space_data date=%s image_query=%s image_count=%d neo_days=%d neo_count=%d",
         date,
-        rover,
-        sol,
-        photo_count,
+        image_query,
+        image_count,
         neo_days,
         neo_count,
     )
     result = _nasa_client.fetch_all(
         apod_date=date,
-        rover=rover,
-        sol=sol,
-        photo_count=photo_count,
+        image_query=image_query,
+        image_count=image_count,
         neo_days=neo_days,
         neo_count=neo_count,
     )

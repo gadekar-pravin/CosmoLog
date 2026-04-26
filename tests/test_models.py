@@ -2,8 +2,8 @@ from models import (
     APODData,
     JournalEntry,
     JournalFile,
+    NASAImage,
     NearEarthObject,
-    RoverPhoto,
     SpaceData,
 )
 
@@ -50,19 +50,20 @@ def test_apod_data_optional_fields():
     assert apod.copyright is None
 
 
-def test_rover_photo():
-    """Construct RoverPhoto, verify id is string."""
-    photo = RoverPhoto(
-        id="12345",
-        rover="Curiosity",
-        camera="Navigation Camera",
-        earth_date="2026-04-20",
-        sol=4100,
-        img_src="https://mars.nasa.gov/photo.jpg",
+def test_nasa_image():
+    """Construct NASAImage, verify fields."""
+    image = NASAImage(
+        nasa_id="PIA12345",
+        title="Curiosity Rover Self-Portrait",
+        date_created="2026-04-20",
+        description="A self-portrait of the Curiosity rover.",
+        center="JPL",
+        img_src="https://images-assets.nasa.gov/image/PIA12345/PIA12345~thumb.jpg",
+        keywords=["Mars", "Curiosity"],
     )
-    assert isinstance(photo.id, str)
-    assert photo.rover == "Curiosity"
-    assert photo.sol == 4100
+    assert image.nasa_id == "PIA12345"
+    assert image.title == "Curiosity Rover Self-Portrait"
+    assert "Mars" in image.keywords
 
 
 def test_near_earth_object_hazardous():
@@ -104,7 +105,7 @@ def test_space_data_partial():
     )
     assert data.apod is None
     assert len(data.errors) == 1
-    assert data.rover_photos == []
+    assert data.nasa_images == []
     assert data.near_earth_objects == []
 
 

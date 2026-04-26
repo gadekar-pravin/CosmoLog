@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from models import APODData, NearEarthObject, RoverPhoto, SpaceData
+from models import APODData, NASAImage, NearEarthObject, SpaceData
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +15,21 @@ CACHE_TTL_SECONDS = 300
 NEGATIVE_CACHE_TTL_SECONDS = 60
 
 APOD_URL = "https://api.nasa.gov/planetary/apod"
-MARS_BASE_URL = "https://api.nasa.gov/mars-photos/api/v1/rovers"
+NASA_IMAGES_URL = "https://images-api.nasa.gov/search"
 NEO_URL = "https://api.nasa.gov/neo/rest/v1/feed"
+
+NASA_IMAGE_QUERIES = [
+    "hubble deep field",
+    "nebula",
+    "saturn rings cassini",
+    "international space station",
+    "mars rover curiosity",
+    "galaxy cluster",
+    "earth from space",
+    "james webb telescope",
+    "apollo moon landing",
+    "solar flare",
+]
 
 
 class NASAClient:
@@ -54,14 +67,22 @@ class NASAClient:
             copyright=data.get("copyright"),
         )
 
-    def _normalize_rover_photo(self, photo: dict[str, Any]) -> RoverPhoto:
-        return RoverPhoto(
-            id=str(photo["id"]),
-            rover=photo["rover"]["name"],
-            camera=photo["camera"]["full_name"],
-            earth_date=photo["earth_date"],
-            sol=photo["sol"],
-            img_src=photo["img_src"],
+    def _normalize_nasa_image(self, item: dict[str, Any]) -> NASAImage:
+        data = item["data"][0]
+        links = item.get("links", [])
+        img_src = ""
+        for link in links:
+            if link.get("rel") == "preview":
+                img_src = link["href"]
+                break
+        return NASAImage(
+            nasa_id=data["nasa_id"],
+            title=data["title"],
+            date_created=data["date_created"][:10],
+            description=data.get("description", ""),
+            center=data.get("center", ""),
+            img_src=img_src,
+            keywords=data.get("keywords", []),
         )
 
     def _normalize_neo(self, neo: dict[str, Any]) -> NearEarthObject:
@@ -99,46 +120,36 @@ class NASAClient:
         self._set_cached(cache_key, apod)
         return apod
 
-    def _fetch_rover_photos(self, rover: str, sol: int | None, count: int) -> list[RoverPhoto]:
-        cache_key = f"rover:{rover}:{sol or 'latest'}"
+    def _fetch_nasa_images(self, query: str, count: int) -> list[NASAImage]:
+        cache_key = f"images:{query}:{count}"
         cached = self._get_cached(cache_key)
         if cached is not None:
             return cached  # type: ignore[return-value]
 
-        logger.info("fetch endpoint=rover rover=%s sol=%s count=%d", rover, sol, count)
+        logger.info("fetch endpoint=images query=%s count=%d", query, count)
         try:
-            photos_data: list[dict[str, Any]]
-            if sol is not None:
-                photos_data = self._request_rover_endpoint(rover, sol)
-                if not photos_data:
-                    photos_data = self._request_rover_latest_endpoint(rover)
-            else:
-                photos_data = self._request_rover_latest_endpoint(rover)
+            response = self.client.get(
+                NASA_IMAGES_URL,
+                params={"q": query, "media_type": "image"},
+            )
+            response.raise_for_status()
         except (httpx.HTTPStatusError, httpx.RequestError):
-            logger.info("rover_negative_cache rover=%s sol=%s", rover, sol)
+            logger.info("images_negative_cache query=%s", query)
             self._set_cached(cache_key, [], ttl=NEGATIVE_CACHE_TTL_SECONDS)
             raise
 
-        rover_photos = [self._normalize_rover_photo(photo) for photo in photos_data[:count]]
-        logger.info("fetch_done endpoint=rover photo_count=%d", len(rover_photos))
-        self._set_cached(cache_key, rover_photos)
-        return rover_photos
+        items = response.json().get("collection", {}).get("items", [])
+        nasa_images: list[NASAImage] = []
+        for item in items[:count]:
+            try:
+                nasa_images.append(self._normalize_nasa_image(item))
+            except (KeyError, IndexError, TypeError, ValueError) as exc:
+                logger.debug("image_normalize_skip error=%s", exc)
+                continue
 
-    def _request_rover_endpoint(self, rover: str, sol: int) -> list[dict[str, Any]]:
-        response = self.client.get(
-            f"{MARS_BASE_URL}/{rover}/photos",
-            params={"api_key": self.api_key, "sol": sol, "page": 1},
-        )
-        response.raise_for_status()
-        return response.json()["photos"]
-
-    def _request_rover_latest_endpoint(self, rover: str) -> list[dict[str, Any]]:
-        response = self.client.get(
-            f"{MARS_BASE_URL}/{rover}/latest_photos",
-            params={"api_key": self.api_key, "page": 1},
-        )
-        response.raise_for_status()
-        return response.json()["latest_photos"]
+        logger.info("fetch_done endpoint=images image_count=%d", len(nasa_images))
+        self._set_cached(cache_key, nasa_images)
+        return nasa_images
 
     def _fetch_neos(self, days: int, count: int) -> list[NearEarthObject]:
         start_date = date.today()
@@ -180,25 +191,28 @@ class NASAClient:
     def fetch_all(
         self,
         apod_date: str | None = None,
-        rover: str = "curiosity",
-        sol: int | None = None,
-        photo_count: int = 3,
+        image_query: str | None = None,
+        image_count: int = 3,
         neo_days: int = 7,
         neo_count: int = 10,
     ) -> SpaceData:
         """Fetch all NASA data, collecting partial results and errors."""
+        if image_query is None:
+            import random
+
+            image_query = random.choice(NASA_IMAGE_QUERIES)
+            logger.info("image_query_rotated resolved=%s", image_query)
         logger.info(
-            "fetch_all date=%s rover=%s sol=%s photo_count=%d neo_days=%d neo_count=%d",
+            "fetch_all date=%s image_query=%s image_count=%d neo_days=%d neo_count=%d",
             apod_date,
-            rover,
-            sol,
-            photo_count,
+            image_query,
+            image_count,
             neo_days,
             neo_count,
         )
         errors: list[str] = []
         apod: APODData | None = None
-        rover_photos: list[RoverPhoto] = []
+        nasa_images: list[NASAImage] = []
         neos: list[NearEarthObject] = []
 
         try:
@@ -216,7 +230,7 @@ class NASAClient:
             errors.append(msg)
 
         try:
-            rover_photos = self._fetch_rover_photos(rover, sol, photo_count)
+            nasa_images = self._fetch_nasa_images(image_query, image_count)
         except (
             httpx.HTTPStatusError,
             httpx.RequestError,
@@ -225,8 +239,8 @@ class NASAClient:
             TypeError,
             ValueError,
         ) as exc:
-            msg = self._format_error("Mars Rover Photos", exc)
-            logger.warning("fetch_all_error api=MarsRover error=%s", msg)
+            msg = self._format_error("NASA Images", exc)
+            logger.warning("fetch_all_error api=NASAImages error=%s", msg)
             errors.append(msg)
 
         try:
@@ -244,15 +258,15 @@ class NASAClient:
             errors.append(msg)
 
         logger.info(
-            "fetch_all_done apod=%s rover_count=%d neo_count=%d error_count=%d",
+            "fetch_all_done apod=%s image_count=%d neo_count=%d error_count=%d",
             apod is not None,
-            len(rover_photos),
+            len(nasa_images),
             len(neos),
             len(errors),
         )
         return SpaceData(
             apod=apod,
-            rover_photos=rover_photos,
+            nasa_images=nasa_images,
             near_earth_objects=neos,
             errors=errors,
         )

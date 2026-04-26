@@ -151,11 +151,11 @@ def test_dispatch_tool_float_to_int_coercion(monkeypatch):
 
     result, _ = agent._dispatch_tool(
         "fetch_space_data",
-        {"sol": 100.0, "photo_count": 3.0, "neo_days": 7.0, "neo_count": 10.0},
+        {"image_count": 3.0, "neo_days": 7.0, "neo_count": 10.0},
     )
 
     assert result == {"status": "success"}
-    assert captured == {"sol": 100, "photo_count": 3, "neo_days": 7, "neo_count": 10}
+    assert captured == {"image_count": 3, "neo_days": 7, "neo_count": 10}
     assert all(isinstance(value, int) for value in captured.values())
 
 

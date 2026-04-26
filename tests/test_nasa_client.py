@@ -8,13 +8,12 @@ from models import SpaceData
 from nasa_client import NASAClient
 
 APOD_URL = "https://api.nasa.gov/planetary/apod"
-ROVER_LATEST_URL = "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/latest_photos"
-ROVER_SOL_URL = "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos"
+NASA_IMAGES_URL = "https://images-api.nasa.gov/search"
 NEO_URL = "https://api.nasa.gov/neo/rest/v1/feed"
 
 
-def _mock_empty_rover() -> None:
-    respx.get(ROVER_LATEST_URL).mock(return_value=Response(200, json={"latest_photos": []}))
+def _mock_empty_images() -> None:
+    respx.get(NASA_IMAGES_URL).mock(return_value=Response(200, json={"collection": {"items": []}}))
 
 
 def _mock_empty_neos() -> None:
@@ -25,7 +24,7 @@ def _mock_empty_neos() -> None:
 def test_fetch_apod_success(sample_apod_response):
     """Mock APOD endpoint, verify APODData fields."""
     respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    _mock_empty_rover()
+    _mock_empty_images()
     _mock_empty_neos()
 
     client = NASAClient(api_key="TEST_KEY")
@@ -41,7 +40,7 @@ def test_fetch_apod_success(sample_apod_response):
 def test_fetch_apod_video(sample_apod_video_response):
     """Mock APOD with media_type='video', verify thumbnail_url is set."""
     respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_video_response))
-    _mock_empty_rover()
+    _mock_empty_images()
     _mock_empty_neos()
 
     client = NASAClient(api_key="TEST_KEY")
@@ -53,43 +52,25 @@ def test_fetch_apod_video(sample_apod_video_response):
 
 
 @respx.mock
-def test_fetch_rover_photos_success(sample_apod_response, sample_rover_response):
-    """Mock rover endpoint, verify photo list and count limit."""
+def test_fetch_nasa_images_success(sample_apod_response, sample_nasa_images_response):
+    """Mock images endpoint, verify image list populated."""
     respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    respx.get(ROVER_LATEST_URL).mock(
-        return_value=Response(200, json={"latest_photos": sample_rover_response["photos"]})
-    )
+    respx.get(NASA_IMAGES_URL).mock(return_value=Response(200, json=sample_nasa_images_response))
     _mock_empty_neos()
 
     client = NASAClient(api_key="TEST_KEY")
-    result = client.fetch_all(photo_count=3)
+    result = client.fetch_all(image_query="test query", image_count=3)
 
-    assert len(result.rover_photos) == 1
-    assert result.rover_photos[0].id == "12345"
-    assert result.rover_photos[0].rover == "Curiosity"
-
-
-@respx.mock
-def test_fetch_rover_latest_fallback(sample_apod_response, sample_rover_response):
-    """Mock sol endpoint returning empty, verify /latest_photos fallback is used."""
-    respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    respx.get(ROVER_SOL_URL).mock(return_value=Response(200, json={"photos": []}))
-    respx.get(ROVER_LATEST_URL).mock(
-        return_value=Response(200, json={"latest_photos": sample_rover_response["photos"]})
-    )
-    _mock_empty_neos()
-
-    client = NASAClient(api_key="TEST_KEY")
-    result = client.fetch_all(sol=9999)
-
-    assert len(result.rover_photos) == 1
+    assert len(result.nasa_images) == 1
+    assert result.nasa_images[0].nasa_id == "PIA12345"
+    assert result.nasa_images[0].title == "Curiosity Rover Self-Portrait"
 
 
 @respx.mock
 def test_fetch_neo_success(sample_apod_response, sample_neo_response):
     """Mock NeoWs, verify flattening of date-keyed response."""
     respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    _mock_empty_rover()
+    _mock_empty_images()
     respx.get(NEO_URL).mock(return_value=Response(200, json=sample_neo_response))
 
     client = NASAClient(api_key="TEST_KEY")
@@ -103,7 +84,7 @@ def test_fetch_neo_success(sample_apod_response, sample_neo_response):
 def test_fetch_neo_hazardous_flag(sample_apod_response, sample_neo_response):
     """Verify is_potentially_hazardous maps from is_potentially_hazardous_asteroid."""
     respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    _mock_empty_rover()
+    _mock_empty_images()
     respx.get(NEO_URL).mock(return_value=Response(200, json=sample_neo_response))
 
     client = NASAClient(api_key="TEST_KEY")
@@ -177,7 +158,7 @@ def test_neo_count_sorts_and_slices(sample_apod_response):
         }
     }
     respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    _mock_empty_rover()
+    _mock_empty_images()
     respx.get(NEO_URL).mock(return_value=Response(200, json=neo_response))
 
     client = NASAClient(api_key="TEST_KEY")
@@ -194,7 +175,7 @@ def test_neo_count_sorts_and_slices(sample_apod_response):
 def test_rate_limit_429():
     """Mock 429 response, verify error message in SpaceData.errors."""
     respx.get(APOD_URL).mock(return_value=Response(429))
-    respx.get(ROVER_LATEST_URL).mock(return_value=Response(429))
+    respx.get(NASA_IMAGES_URL).mock(return_value=Response(429))
     respx.get(NEO_URL).mock(return_value=Response(429))
 
     client = NASAClient(api_key="TEST_KEY")
@@ -209,7 +190,7 @@ def test_rate_limit_429():
 def test_invalid_key_403():
     """Mock 403 response, verify error message."""
     respx.get(APOD_URL).mock(return_value=Response(403))
-    respx.get(ROVER_LATEST_URL).mock(return_value=Response(403))
+    respx.get(NASA_IMAGES_URL).mock(return_value=Response(403))
     respx.get(NEO_URL).mock(return_value=Response(403))
 
     client = NASAClient(api_key="INVALID_KEY")
@@ -223,7 +204,7 @@ def test_invalid_key_403():
 def test_network_error():
     """Mock httpx.ConnectError, verify graceful error collection."""
     respx.get(APOD_URL).mock(side_effect=ConnectError("Connection refused"))
-    respx.get(ROVER_LATEST_URL).mock(side_effect=ConnectError("Connection refused"))
+    respx.get(NASA_IMAGES_URL).mock(side_effect=ConnectError("Connection refused"))
     respx.get(NEO_URL).mock(side_effect=ConnectError("Connection refused"))
 
     client = NASAClient(api_key="TEST_KEY")
@@ -238,45 +219,44 @@ def test_network_error():
 def test_empty_response():
     """Mock empty JSON body, verify no crash."""
     respx.get(APOD_URL).mock(return_value=Response(200, json={}))
-    respx.get(ROVER_LATEST_URL).mock(return_value=Response(200, json={}))
+    respx.get(NASA_IMAGES_URL).mock(return_value=Response(200, json={}))
     respx.get(NEO_URL).mock(return_value=Response(200, json={}))
 
     client = NASAClient(api_key="TEST_KEY")
     result = client.fetch_all()
 
     assert isinstance(result, SpaceData)
-    assert len(result.errors) == 3
+    # APOD and NEO raise KeyError on {}, but images gracefully returns []
+    assert len(result.errors) == 2
     assert all("unexpected data format" in error for error in result.errors)
 
 
 @respx.mock
-def test_caching(sample_apod_response, sample_rover_response, sample_neo_response):
+def test_caching(sample_apod_response, sample_nasa_images_response, sample_neo_response):
     """Call fetch_all twice, verify only one HTTP request per endpoint."""
     apod_route = respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    rover_route = respx.get(ROVER_LATEST_URL).mock(
-        return_value=Response(200, json={"latest_photos": sample_rover_response["photos"]})
+    images_route = respx.get(NASA_IMAGES_URL).mock(
+        return_value=Response(200, json=sample_nasa_images_response)
     )
     neo_route = respx.get(NEO_URL).mock(return_value=Response(200, json=sample_neo_response))
 
     client = NASAClient(api_key="TEST_KEY")
-    client.fetch_all()
-    client.fetch_all()
+    client.fetch_all(image_query="test query")
+    client.fetch_all(image_query="test query")
 
     assert apod_route.call_count == 1
-    assert rover_route.call_count == 1
+    assert images_route.call_count == 1
     assert neo_route.call_count == 1
 
 
 @respx.mock
 def test_cache_expiry(
-    monkeypatch, sample_apod_response, sample_rover_response, sample_neo_response
+    monkeypatch, sample_apod_response, sample_nasa_images_response, sample_neo_response
 ):
     """Advance time past TTL (300s), verify cache miss triggers new request."""
 
     apod_route = respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    respx.get(ROVER_LATEST_URL).mock(
-        return_value=Response(200, json={"latest_photos": sample_rover_response["photos"]})
-    )
+    respx.get(NASA_IMAGES_URL).mock(return_value=Response(200, json=sample_nasa_images_response))
     respx.get(NEO_URL).mock(return_value=Response(200, json=sample_neo_response))
 
     monkeypatch.setattr(nc.time, "time", lambda: 1000.0)
@@ -291,9 +271,9 @@ def test_cache_expiry(
 
 @respx.mock
 def test_partial_failure(sample_apod_response):
-    """APOD succeeds, rover fails -- verify partial SpaceData."""
+    """APOD succeeds, images fail -- verify partial SpaceData."""
     respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    respx.get(ROVER_LATEST_URL).mock(return_value=Response(500))
+    respx.get(NASA_IMAGES_URL).mock(return_value=Response(500))
     _mock_empty_neos()
 
     client = NASAClient(api_key="TEST_KEY")
@@ -301,45 +281,66 @@ def test_partial_failure(sample_apod_response):
 
     assert result.apod is not None
     assert result.apod.title == "Test Nebula"
-    assert result.rover_photos == []
+    assert result.nasa_images == []
     assert len(result.errors) >= 1
-    assert "Mars Rover Photos returned HTTP 500" in result.errors
+    assert "NASA Images returned HTTP 500" in result.errors
 
 
 @respx.mock
-def test_rover_404_negative_caching(sample_apod_response, sample_neo_response):
-    """Rover 404 is cached: second fetch_all skips HTTP, returns no rover error."""
+def test_images_negative_caching(sample_apod_response, sample_neo_response):
+    """Images 404 is cached: second fetch_all skips HTTP, returns no images error."""
     respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    rover_route = respx.get(ROVER_LATEST_URL).mock(return_value=Response(404))
+    images_route = respx.get(NASA_IMAGES_URL).mock(return_value=Response(404))
     respx.get(NEO_URL).mock(return_value=Response(200, json=sample_neo_response))
 
     client = NASAClient(api_key="TEST_KEY")
-    result1 = client.fetch_all()
+    result1 = client.fetch_all(image_query="test query")
 
-    assert rover_route.call_count == 1
+    assert images_route.call_count == 1
     assert any("404" in e for e in result1.errors)
 
-    result2 = client.fetch_all()
+    result2 = client.fetch_all(image_query="test query")
 
-    assert rover_route.call_count == 1
-    assert result2.rover_photos == []
-    assert not any("Rover" in e for e in result2.errors)
+    assert images_route.call_count == 1
+    assert result2.nasa_images == []
+    assert not any("Images" in e for e in result2.errors)
 
 
 @respx.mock
-def test_rover_negative_cache_expiry(monkeypatch, sample_apod_response, sample_neo_response):
-    """After NEGATIVE_CACHE_TTL_SECONDS, rover 404 is retried."""
+def test_images_negative_cache_expiry(monkeypatch, sample_apod_response, sample_neo_response):
+    """After NEGATIVE_CACHE_TTL_SECONDS, images 404 is retried."""
     respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
-    rover_route = respx.get(ROVER_LATEST_URL).mock(return_value=Response(404))
+    images_route = respx.get(NASA_IMAGES_URL).mock(return_value=Response(404))
     respx.get(NEO_URL).mock(return_value=Response(200, json=sample_neo_response))
 
     monkeypatch.setattr(nc.time, "time", lambda: 1000.0)
     client = NASAClient(api_key="TEST_KEY")
     client.fetch_all()
 
-    assert rover_route.call_count == 1
+    assert images_route.call_count == 1
 
     monkeypatch.setattr(nc.time, "time", lambda: 1000.0 + nc.NEGATIVE_CACHE_TTL_SECONDS + 1)
     client.fetch_all()
 
-    assert rover_route.call_count == 2
+    assert images_route.call_count == 2
+
+
+@respx.mock
+def test_default_query_uses_pool(sample_apod_response, sample_neo_response):
+    """When image_query is omitted, fetch_all picks from NASA_IMAGE_QUERIES."""
+    from nasa_client import NASA_IMAGE_QUERIES
+
+    respx.get(APOD_URL).mock(return_value=Response(200, json=sample_apod_response))
+    respx.get(NASA_IMAGES_URL).mock(return_value=Response(200, json={"collection": {"items": []}}))
+    respx.get(NEO_URL).mock(return_value=Response(200, json=sample_neo_response))
+
+    client = NASAClient(api_key="TEST_KEY")
+    result = client.fetch_all()
+
+    assert isinstance(result, SpaceData)
+    # The resolved query must come from the pool — verify via the cache key
+    cache_keys = list(client._cache.keys())
+    image_cache_keys = [k for k in cache_keys if k.startswith("images:")]
+    assert len(image_cache_keys) == 1
+    resolved_query = image_cache_keys[0].split(":")[1]
+    assert resolved_query in NASA_IMAGE_QUERIES

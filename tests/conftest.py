@@ -28,19 +28,33 @@ def sample_apod_video_response():
 
 
 @pytest.fixture
-def sample_rover_response():
-    """Raw NASA Mars Rover Photos API response."""
+def sample_nasa_images_response():
+    """Raw NASA Image Library API response."""
     return {
-        "photos": [
-            {
-                "id": 12345,
-                "rover": {"name": "Curiosity"},
-                "camera": {"full_name": "Navigation Camera"},
-                "earth_date": "2026-04-20",
-                "sol": 4100,
-                "img_src": "https://mars.nasa.gov/photo.jpg",
-            }
-        ]
+        "collection": {
+            "items": [
+                {
+                    "data": [
+                        {
+                            "nasa_id": "PIA12345",
+                            "title": "Curiosity Rover Self-Portrait",
+                            "date_created": "2026-04-20T00:00:00Z",
+                            "description": "A self-portrait of the Curiosity rover.",
+                            "center": "JPL",
+                            "media_type": "image",
+                            "keywords": ["Mars", "Curiosity"],
+                        }
+                    ],
+                    "links": [
+                        {
+                            "href": "https://images-assets.nasa.gov/image/PIA12345/PIA12345~thumb.jpg",
+                            "rel": "preview",
+                            "render": "image",
+                        }
+                    ],
+                }
+            ]
+        }
     }
 
 
