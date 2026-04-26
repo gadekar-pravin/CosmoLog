@@ -1527,6 +1527,161 @@
       from { transform: rotate(90deg) translateX(85px) rotate(-90deg); }
       to   { transform: rotate(450deg) translateX(85px) rotate(-450deg); }
     }
+    /* ── Log drawer ─────────────────────────── */
+
+    .log-drawer {
+      display: none;
+      flex-direction: column;
+      max-height: 220px;
+      border-top: 1px solid var(--border-strong);
+      background: rgba(5, 6, 13, 0.88);
+      backdrop-filter: blur(12px);
+      flex: 0 0 auto;
+    }
+
+    .log-drawer.visible {
+      display: flex;
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5, 6, 13, 0.5);
+    }
+
+    .log-header-title {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .log-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 10px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      scrollbar-color: rgba(110, 168, 255, 0.3) transparent;
+    }
+
+    .log-line {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      animation: fadeSlideUp 150ms ease both;
+    }
+
+    .log-line:hover {
+      background: rgba(110, 168, 255, 0.06);
+    }
+
+    .log-time {
+      flex: 0 0 52px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .log-level {
+      flex: 0 0 56px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .log-level.info {
+      color: var(--cosmic-blue);
+      background: rgba(110, 168, 255, 0.12);
+    }
+
+    .log-level.warning {
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.12);
+    }
+
+    .log-level.error {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.12);
+    }
+
+    .log-module {
+      flex: 0 0 72px;
+      color: var(--nebula-purple);
+      font-weight: 500;
+    }
+
+    .log-msg {
+      flex: 1;
+      min-width: 0;
+      color: var(--star-white);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sb-log-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+    }
+
+    .sb-log-toggle:hover {
+      border-color: var(--border-strong);
+      background: var(--surface-hover);
+      color: var(--star-white);
+    }
+
+    .sb-log-toggle.active {
+      border-color: rgba(110, 168, 255, 0.4);
+      color: var(--cosmic-blue);
+    }
+
+    .sb-log-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: rgba(106, 113, 150, 0.25);
+      color: var(--muted);
+      font-size: 0.58rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .sb-log-badge.has-warnings {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+    }
+
+    .sb-log-badge.has-errors {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+    }
+
   </style>
 </head>
 <body>
@@ -1720,6 +1875,14 @@
       </section>
     </main>
 
+    <div class="log-drawer" id="logDrawer">
+      <div class="log-header">
+        <span class="log-header-title">Activity Log</span>
+        <button class="sb-log-toggle" id="logCloseBtn" type="button">Close</button>
+      </div>
+      <div class="log-body" id="logBody"></div>
+    </div>
+
     <footer class="status-bar" aria-label="Status bar">
       <div class="sb-zone">
         <div class="sb-dot"></div>
@@ -1732,6 +1895,9 @@
       <div class="sb-zone sb-center">
         <div class="signal-bars" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
         <span id="sbConnection">Connected &middot; listening for transmissions</span>
+        <button class="sb-log-toggle" id="logToggle" type="button">
+          Logs <span class="sb-log-badge" id="logBadge">0</span>
+        </button>
       </div>
       <div class="sb-zone">
         <span class="sb-label">Events</span> <span class="sb-value" id="sbEvents">0</span>
@@ -1766,6 +1932,13 @@
     const floatingInput = document.querySelector("#floatingInput");
     const floatingSend = document.querySelector("#floatingSend");
 
+    // Log drawer
+    const logDrawer = document.querySelector("#logDrawer");
+    const logBody = document.querySelector("#logBody");
+    const logToggle = document.querySelector("#logToggle");
+    const logCloseBtn = document.querySelector("#logCloseBtn");
+    const logBadge = document.querySelector("#logBadge");
+
     // Telemetry
     const telemUtc = document.querySelector("#telemUtc");
     const telemLatency = document.querySelector("#telemLatency");
@@ -1784,6 +1957,18 @@
     let toolCallCount = 0;
     let requestStartTime = 0;
     let pendingDashboardHtml = null;
+    let logCount = 0;
+    let logHasWarnings = false;
+    let logHasErrors = false;
+    let logStartTime = 0;
+
+    const LOG_MODULE_NAMES = {
+      "__main__": "Agent",
+      "mcp_server": "MCP",
+      "journal": "Journal",
+      "nasa_client": "NASA",
+      "dashboard": "Dashboard",
+    };
 
     /* ── Init: session ID + clock + kbd hint ─ */
     const sessionId = Math.floor(Math.random() * 0xFFFF).toString(16).padStart(4, "0");
@@ -2042,7 +2227,55 @@
       return event;
     }
 
+    function handleLogEvent(payload) {
+      logCount++;
+      logBadge.textContent = logCount;
+
+      var level = (payload.level || "INFO").toLowerCase();
+      if (level === "warning") logHasWarnings = true;
+      if (level === "error") logHasErrors = true;
+
+      logBadge.className = "sb-log-badge";
+      if (logHasErrors) logBadge.classList.add("has-errors");
+      else if (logHasWarnings) logBadge.classList.add("has-warnings");
+
+      if (logStartTime === 0 && payload.timestamp) logStartTime = payload.timestamp;
+      var relMs = payload.timestamp ? Math.round((payload.timestamp - logStartTime) * 1000) : 0;
+
+      var moduleName = LOG_MODULE_NAMES[payload.module] || payload.module || "System";
+
+      var line = document.createElement("div");
+      line.className = "log-line";
+
+      var time = document.createElement("span");
+      time.className = "log-time";
+      time.textContent = "+" + relMs + "ms";
+
+      var badge = document.createElement("span");
+      badge.className = "log-level " + level;
+      badge.textContent = (payload.level || "INFO").toUpperCase();
+
+      var mod = document.createElement("span");
+      mod.className = "log-module";
+      mod.textContent = moduleName;
+
+      var msg = document.createElement("span");
+      msg.className = "log-msg";
+      msg.textContent = payload.message || "";
+
+      line.appendChild(time);
+      line.appendChild(badge);
+      line.appendChild(mod);
+      line.appendChild(msg);
+      logBody.appendChild(line);
+      logBody.scrollTop = logBody.scrollHeight;
+    }
+
     function handleEvent(eventType, payload) {
+      if (eventType === "log") {
+        handleLogEvent(payload);
+        return;
+      }
       incrementEvents();
 
       switch (eventType) {
@@ -2177,6 +2410,15 @@
         sbTools.textContent = "0 / 3";
         telemLatency.textContent = "-- ms";
         telemTokens.textContent = "0 / 8K";
+        logBody.textContent = "";
+        logCount = 0;
+        logHasWarnings = false;
+        logHasErrors = false;
+        logStartTime = 0;
+        logBadge.textContent = "0";
+        logBadge.className = "sb-log-badge";
+        logDrawer.classList.remove("visible");
+        logToggle.classList.remove("active");
         resetDashboard();
         setProcessing(false);
       }
@@ -2205,6 +2447,17 @@
       var collapsed = chatPanel.classList.toggle("collapsed");
       chatToggle.textContent = collapsed ? "\u25B6" : "\u25C4";
       floatingComposer.classList.toggle("visible", collapsed);
+    });
+
+    // Log drawer toggle
+    logToggle.addEventListener("click", function() {
+      logDrawer.classList.toggle("visible");
+      logToggle.classList.toggle("active");
+    });
+
+    logCloseBtn.addEventListener("click", function() {
+      logDrawer.classList.remove("visible");
+      logToggle.classList.remove("active");
     });
 
     floatingSend.addEventListener("click", function() {

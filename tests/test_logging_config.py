@@ -1,15 +1,93 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import logging_config
 from logging_config import (
     CorrelationFilter,
+    SSELogHandler,
     _truncate,
     configure_logging,
     get_correlation_id,
     set_correlation_id,
 )
+
+
+class TestSSELogHandler:
+    _cid_filter = CorrelationFilter()
+
+    def _handler_with_queue(
+        self, target_cid: str, maxsize: int = 100
+    ) -> tuple[SSELogHandler, asyncio.Queue]:
+        queue: asyncio.Queue = asyncio.Queue(maxsize=maxsize)
+        handler = SSELogHandler(queue, target_cid=target_cid)
+        return handler, queue
+
+    def _emit(self, handler: SSELogHandler, record: logging.LogRecord) -> None:
+        """Apply CorrelationFilter (as root logger would) then emit."""
+        self._cid_filter.filter(record)
+        handler.emit(record)
+
+    def test_captures_matching_cid(self):
+        token = logging_config.correlation_id.set("abc123")
+        try:
+            handler, queue = self._handler_with_queue("abc123")
+            record = _make_record(msg="tool_dispatch name=fetch")
+            self._emit(handler, record)
+            assert not queue.empty()
+            entry = queue.get_nowait()
+            assert entry["level"] == "INFO"
+            assert entry["message"] == "tool_dispatch name=fetch"
+            assert "module" in entry
+            assert "timestamp" in entry
+        finally:
+            logging_config.correlation_id.reset(token)
+
+    def test_ignores_different_cid(self):
+        token = logging_config.correlation_id.set("xyz789")
+        try:
+            handler, queue = self._handler_with_queue("abc123")
+            record = _make_record()
+            self._emit(handler, record)
+            assert queue.empty()
+        finally:
+            logging_config.correlation_id.reset(token)
+
+    def test_ignores_debug_level(self):
+        token = logging_config.correlation_id.set("abc123")
+        try:
+            handler, queue = self._handler_with_queue("abc123")
+            record = _make_record(level=logging.DEBUG)
+            self._emit(handler, record)
+            assert queue.empty()
+        finally:
+            logging_config.correlation_id.reset(token)
+
+    def test_full_queue_does_not_raise(self):
+        token = logging_config.correlation_id.set("abc123")
+        try:
+            handler, queue = self._handler_with_queue("abc123", maxsize=1)
+            for _ in range(5):
+                record = _make_record()
+                self._emit(handler, record)
+            assert queue.qsize() == 1
+        finally:
+            logging_config.correlation_id.reset(token)
+
+
+def _make_record(
+    name: str = "test", level: int = logging.INFO, msg: str = "hello"
+) -> logging.LogRecord:
+    return logging.LogRecord(
+        name=name,
+        level=level,
+        pathname="",
+        lineno=0,
+        msg=msg,
+        args=None,
+        exc_info=None,
+    )
 
 
 def _reset_logging_config(monkeypatch):

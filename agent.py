@@ -18,7 +18,14 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from sse_starlette.sse import EventSourceResponse
 
 from agent_prompt import SYSTEM_PROMPT
-from logging_config import _truncate, configure_logging, set_correlation_id
+from logging_config import (
+    CorrelationFilter,
+    SSELogHandler,
+    _truncate,
+    configure_logging,
+    get_correlation_id,
+    set_correlation_id,
+)
 from mcp_server import fetch_space_data, manage_space_journal, show_space_dashboard
 
 configure_logging()
@@ -501,15 +508,40 @@ async def agent_loop(
 async def _sse_event_stream(
     message: str,
 ) -> AsyncGenerator[dict[str, str], None]:
+    import asyncio as _asyncio
+
+    log_queue: _asyncio.Queue[dict[str, Any]] = _asyncio.Queue(maxsize=200)
+    cid = get_correlation_id()
+    log_handler = SSELogHandler(log_queue, target_cid=cid)
+    log_handler.addFilter(CorrelationFilter())
+    root_logger = logging.getLogger()
+    root_logger.addHandler(log_handler)
+
+    def _drain_logs() -> list[dict[str, str]]:
+        entries: list[dict[str, str]] = []
+        while not log_queue.empty():
+            try:
+                entry = log_queue.get_nowait()
+                entries.append({"event": "log", "data": json.dumps(entry)})
+            except _asyncio.QueueEmpty:
+                break
+        return entries
+
     try:
         async for event in agent_loop(message, conversation_history):
+            for log_event in _drain_logs():
+                yield log_event
             event_type = event["type"]
             data = event.get("data", {})
             yield {"event": event_type, "data": json.dumps(data)}
+        for log_event in _drain_logs():
+            yield log_event
     except Exception as exc:
         logger.exception("sse_stream_error")
         yield {"event": "error", "data": json.dumps({"message": str(exc)})}
         yield {"event": "done", "data": json.dumps({})}
+    finally:
+        root_logger.removeHandler(log_handler)
 
 
 @app.get("/")

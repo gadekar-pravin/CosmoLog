@@ -2,11 +2,51 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextvars import ContextVar
+from typing import Any
 
 correlation_id: ContextVar[str] = ContextVar("correlation_id", default="no-request")
+
+_MODULE_FRIENDLY_NAMES: dict[str, str] = {
+    "__main__": "Agent",
+    "agent": "Agent",
+    "mcp_server": "MCP",
+    "journal": "Journal",
+    "nasa_client": "NASA",
+    "dashboard": "Dashboard",
+    "logging_config": "Logging",
+}
+
+
+class SSELogHandler(logging.Handler):
+    """Captures log records for a specific request and queues them as SSE-ready dicts."""
+
+    def __init__(self, queue: asyncio.Queue[dict[str, Any]], target_cid: str) -> None:
+        super().__init__(level=logging.INFO)
+        self._queue = queue
+        self._target_cid = target_cid
+
+    def emit(self, record: logging.LogRecord) -> None:
+        cid = getattr(record, "correlation_id", None)
+        if cid != self._target_cid:
+            return
+        if record.levelno < logging.INFO:
+            return
+
+        friendly = _MODULE_FRIENDLY_NAMES.get(record.name, record.name)
+        entry: dict[str, Any] = {
+            "timestamp": record.created,
+            "level": record.levelname,
+            "module": friendly,
+            "message": record.getMessage(),
+        }
+        try:
+            self._queue.put_nowait(entry)
+        except asyncio.QueueFull:
+            pass
 
 
 def get_correlation_id() -> str:
